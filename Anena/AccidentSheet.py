@@ -4,6 +4,8 @@ from enum import Enum, auto
 from pathlib import Path
 from pprint import pprint
 from typing import Iterator
+import datetime
+import json
 import os
 import re
 
@@ -32,8 +34,7 @@ def fr_to_bool(value: str) -> bool:
            return False
        case 'oui':
            return True
-    raise ValueError(valueerror)
-
+    raise ValueError(value)
 
 ####################################################################################################
 
@@ -68,6 +69,13 @@ class MappedEnum:
     @classmethod
     def translate(cls, value: str):
         return cls._map[cls][value]
+
+    ##############################################
+
+    @classmethod
+    def to_json(cls, value) -> str:
+        _ = str(value).lower()
+        return _.split('.')[1]
 
 ####################################################################################################
 
@@ -261,6 +269,86 @@ MappedEnum._init()
 
 ####################################################################################################
 
+class Inclination:
+
+    ##############################################
+
+    def __init__(self, value: str) -> None:
+        self._value = value
+
+    ##############################################
+
+    def __repr__(self) -> str:
+        return self._value
+
+####################################################################################################
+
+class Coordinate:
+
+    ##############################################
+
+    def __init__(self, value: str) -> None:
+        value = value.lower()
+        self._value = value
+        self._latidude = None
+        self._longitude = None
+        if '°' in value:
+            # 45°51'23.50" / 6°27'12.10"
+            value = value.replace('/', ' ')
+            value = value.replace("''", '"')
+            value = value.replace("'.", "'")
+            # Fixme:
+            #   45°03.931'' // 6°04.543'
+            #   45°24'16''/6°49'01.2'' /// 45°24'05.8''/6°49'02.6''
+            try:
+                self._latidude, self._longitude = [self.parse_coordinate(_) for _ in value.split(' ') if _]
+            except Exception:
+                pass
+
+    ##############################################
+
+    @classmethod
+    def parse_coordinate(cls, value: str) -> list:
+        match = re.match('(\d+)°(\d+)\'(\d+(\.\d+)?)"?', value)
+        strings = [_ for _ in match.groups()[:3]]
+        return [int(strings[0]), int(strings[1]), float(strings[2])]
+
+    ##############################################
+
+    def __repr__(self) -> str:
+        return self._value
+
+    ##############################################
+
+    # @classmethod
+    # def format(cls, value) -> str:
+    #     return f'{value}'
+
+    ##############################################
+
+    def to_json(self) -> dict:
+        if self._longitude:
+            return {'longitude': self._longitude, 'latitude': self._latidude}
+        else:
+            return self._value
+
+####################################################################################################
+
+class Delay:
+
+    ##############################################
+
+    def __init__(self, hours: int=0, minutes: int=0) -> None:
+        self._minutes = int(hours * 60 + minutes)
+
+    ##############################################
+
+    @property
+    def minutes(self) -> int:
+        return self._minutes
+
+####################################################################################################
+
 class Accident:
 
     _MAP = {}
@@ -274,8 +362,8 @@ class Accident:
         (('cohésion neige', 'cohésion'), 'snow_cohesion', SnowCohesion),
         ('commentaires', 'comment', str),
         ('commune', 'city', str),
-        (('coordonnées zone départ', 'coordonnées ZD'), 'coordinate', str),
-        ('date', 'date', str),
+        (('coordonnées zone départ', 'coordonnées ZD'), 'coordinate', Coordinate),
+        ('date', 'date', str),   # to datetime later
         (('décédés', 'décédées'), 'dead', int),
         ('délai intervention', 'rescue_delay', float),
         (('dénivelé (mètres)', 'dénivelé'), 'height_difference', int),
@@ -289,8 +377,8 @@ class Accident:
         (('épaisseur cassure max. (cm)', 'hauteur maxi cassure'), 'thickness_max', int),
         ('évolution', 'move_direction', MoveDirection),
         ('groupe', 'number_of_persons', int),
-        ('heure', 'hour', str),
-        (('inclinaison', 'inclinaison échelle'), 'inclination', str),
+        ('heure', 'hour', str),     # to datetime later
+        (('inclinaison', 'inclinaison échelle'), 'inclination', Inclination),
         (('indemnes', 'indemne'), 'safe', int),
         (('largeur cassure (mètres)', 'largeur cassure'), 'width', int),
         ('longueur coulée', 'length', int),
@@ -308,33 +396,6 @@ class Accident:
         _ = (attribute, cls)
         for key in keys:
             _MAP[key] = _
-
-    ##############################################
-
-    @classmethod
-    def column_map(cls, columns: list[str]) -> list[tuple]:   # tuple[str, ctor]
-        # Fixme: use a context manager ?
-        return [cls._MAP[_] for _ in columns]
-
-    @classmethod
-    def convert(cls, column_map: list, values: list) -> 'Accident':
-        kwargs = {}
-        for i, value in enumerate(values):
-            attribute, cls = column_map[i]
-            if isinstance(value, str):
-                value = value.strip()
-                if not value:
-                    value = None
-            if value is not None:
-                if issubclass(cls, MappedEnum):
-                    value = cls.translate(value)
-                elif cls in (int, float):
-                    value = cls(value)
-                elif cls is bool:
-                    value = fr_to_bool(value)
-            kwargs[attribute] = value
-        pprint(kwargs)
-        # return Accident(**kwargs)
 
     ##############################################
 
@@ -377,6 +438,143 @@ class Accident:
     def __init__(self, **kwargs: dict) -> None:
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    ##############################################
+
+    @property
+    def week(self) -> int:
+        return self.date.isocalendar().week
+
+    ##############################################
+
+    def to_json(self) -> dict:
+        return self.__dict__
+
+####################################################################################################
+
+class AccidentSheetContextManager:
+
+    ##############################################
+
+    def __init__(self, sheet: 'AccidentSheet') -> None:
+        self._column_map = [Accident._MAP[_] for _ in sheet.column_titles]
+
+    ##############################################
+
+    def __enter__(self):
+        return self
+
+    ##############################################
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    ##############################################
+
+    def convert(self, values: list) -> 'Accident':
+        kwargs = {name: None for name, cls in Accident._MAP.values()}
+        for i, value in enumerate(values):
+            attribute, cls = self._column_map[i]
+            if isinstance(value, str):
+                value = value.strip()
+                if not value:
+                    value = None
+            if value is not None:
+                if issubclass(cls, MappedEnum):
+                    value = cls.translate(value)
+                elif cls is bool:
+                    value = fr_to_bool(value)
+                else:
+                    value = cls(value)
+            kwargs[attribute] = value
+
+        date = kwargs['date']
+        hour = kwargs['hour']
+        if date:
+            date = date.replace('-', '/')
+            if hour:
+                kwargs['date'] = datetime.datetime.strptime(f"{date} {hour}", '%d/%m/%Y %H:%M')
+            else:
+                kwargs['date'] = datetime.datetime.strptime(date, '%d/%m/%Y')
+            del kwargs['hour']
+
+        rescue_delay = kwargs['rescue_delay']
+        if rescue_delay:
+            hours = int(rescue_delay)
+            # Fixme: ok ???
+            minutes = int((rescue_delay - hours) * 100)
+            # datetime.timedelta
+            kwargs['rescue_delay'] = Delay(hours=hours, minutes=minutes)
+
+        # pprint(kwargs)
+        return Accident(**kwargs)
+
+####################################################################################################
+
+class AccidentEncoder(json.JSONEncoder):
+    def default(self, obj):
+        match obj:
+            case Coordinate():
+                return obj.to_json()
+            case datetime.datetime():
+                return obj.isoformat()
+            case Delay():
+                return obj.minutes
+            case Enum():
+                return MappedEnum.to_json(obj)
+            case Inclination():
+                return str(obj)
+            case _:
+                return json.JSONEncoder.default(self, obj)
+
+####################################################################################################
+
+class Accidents:
+
+    ##############################################
+
+    def __init__(self) -> None:
+        self._items = []
+
+    ##############################################
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __iter__(self) -> Iterator[Accident]:
+        return iter(self._items)
+
+    ##############################################
+
+    # | 'Accidents'
+    def append(self, item: Accident) -> None:
+        match item:
+            case Accident():
+                self._items.append(item)
+            case Accidents():
+                self._items.extend(item)
+
+    def __iadd__(self, item: Accident) -> 'Accidents':
+        self.append(item)
+        return self
+
+    ##############################################
+
+    def to_json(self) -> list:
+        return [_.to_json() for _ in self]
+
+    ##############################################
+
+    def write_json(self, path: Path) -> None:
+        with open(path, 'w') as fh:
+            data = json.dumps(
+                accidents.to_json(),
+                cls=AccidentEncoder,
+                indent=4,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            fh.write(data)
 
 ####################################################################################################
 
@@ -487,7 +685,20 @@ class AccidentSheet:
         return self._sheet.nrows
 
     def row_values(self, i: int) -> list[int | str]:
-        return [_.value for _ in self._sheet.row(i)]
+        row = self._sheet.row(i)
+        values = []
+        for cell in row:
+            if cell.ctype == 3:
+                # _ = xlrd.xldate.xldate_as_datetime(cell.value, 0)
+                _ = xlrd.xldate.xldate_as_tuple(cell.value, 0)
+                if _[0]:
+                    value = f'{_[2]}/{_[1]}/{_[0]}'
+                else:
+                    value = f'{_[3]}:{_[4]}'
+            else:
+                value = cell.value
+            values.append(value)
+        return values
 
     def __iter__(self):
         # for row in self._sheet.get_rows():
@@ -539,11 +750,15 @@ class AccidentBook:
 
     ##############################################
 
-    def to_accident_pre_2019(self):
+    def to_accident_pre_2019(self) -> Accidents:
+        accidents = Accidents()
         sheet = self[0]
-        column_map = Accident.column_map(sheet.column_titles)
-        for row in sheet:
-            Accident.convert(column_map, row)
+        with AccidentSheetContextManager(sheet) as cm:
+            for row in sheet:
+                # Skip total line
+                if row[0]:
+                    accidents += cm.convert(row)
+        return accidents
 
 ####################################################################################################
 
@@ -559,11 +774,15 @@ if __name__ == '__main__':
         Accident.dump()
 
     if True:
+        accidents = Accidents()
         for path in xls_paths:
             book = AccidentBook(path)
             if book.start_year < 2019:
+                print()
+                print('='*100)
                 print(book.start_year)
-                book.to_accident_pre_2019()
+                accidents += book.to_accident_pre_2019()
+        accidents.write_json('anena-accidents.json')
 
         # for sheet in book[0]:
             # print(sheet.name)
