@@ -1,8 +1,33 @@
 ####################################################################################################
+#
+# Avalanche - 
+# Copyright (C) 2021 Fabrice Salvaire
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+####################################################################################################
+
+__all__ = [
+    'AccidentBook',
+    'Accident',
+    'Accidents',
+]
+
+####################################################################################################
 
 from enum import Enum, auto
 from pathlib import Path
-from pprint import pprint
 from typing import Iterator
 import datetime
 import json
@@ -568,7 +593,7 @@ class Accidents:
     def write_json(self, path: Path) -> None:
         with open(path, 'w') as fh:
             data = json.dumps(
-                accidents.to_json(),
+                self.to_json(),
                 cls=AccidentEncoder,
                 indent=4,
                 ensure_ascii=False,
@@ -759,34 +784,3 @@ class AccidentBook:
                 if row[0]:
                     accidents += cm.convert(row)
         return accidents
-
-####################################################################################################
-
-if __name__ == '__main__':
-
-    xls_paths = Path('xls').glob('tableau-accidents-*-*.xls')
-    xls_paths = sorted(xls_paths)
-
-    if False:
-        for path in xls_paths[:-1]:
-            book = AccidentBook(path)
-            Accident.learn(book[0])
-        Accident.dump()
-
-    if True:
-        accidents = Accidents()
-        for path in xls_paths:
-            book = AccidentBook(path)
-            if book.start_year < 2019:
-                print()
-                print('='*100)
-                print(book.start_year)
-                accidents += book.to_accident_pre_2019()
-        accidents.write_json('anena-accidents.json')
-
-        # for sheet in book[0]:
-            # print(sheet.name)
-            # print(sheet.column_titles)
-        # sheet = book[1]
-        # for row in sheet:
-        #     anena_victim = Victim.from_2019(row)
