@@ -25,13 +25,119 @@ __all__ = [
 
 ####################################################################################################
 
+from enum import Enum
 from pathlib import Path
 from typing import Iterator
+import datetime
 import json
+
+from .DataType import *
 
 ####################################################################################################
 
 class Accident:
+
+    ATTRIBUTE_TYPES = {
+        'activity': Activity,
+        'altitude': int,
+        'injured': int,
+        'bra_level': int,
+        'start_reason': StartReason,
+        'code': str,
+        'snow_cohesion': SnowCohesion,
+        'comment': str,
+        'city': str,
+        'coordinate': Coordinate,
+        'date': datetime.datetime,
+        'dead': int,
+        'rescue_delay': float,
+        'height_difference': int,
+        'departement': int,
+        'carried_away': int,
+        'gear': Gear,
+        'partial_bluried_critical': int,
+        'partial_bluried_non_critical': int,
+        'head_bluried': int,
+        'full_bluried': int,
+        'thickness_max': int,
+        'move_direction': MoveDirection,
+        'number_of_persons': int,
+        'inclination': Inclination,
+        'safe': int,
+        'width': int,
+        'length': int,
+        'mountain_area': str,
+        'alert_device': AlertDevice,
+        'orientation': Orientation,
+        'alert_person': AlertPerson,
+        'doctor_on_site': bool,
+        'snow_quality': SnowQuality,
+        'location': str,
+        'start_type': StartType,
+    }
+
+    ATTRIBUTE_DOC = {
+        'activity': 'activity of the persons during the accident',
+        'altitude': 'altitude',
+        'injured': 'number of injured persons',
+        'bra_level': 'French BRA level',
+        'start_reason': 'start reason of the avalanche',
+        'code': 'ANENA accident code',
+        'snow_cohesion': 'cohesion of the snow',
+        'comment': 'comment',
+        'city': 'city of the accident',
+        'coordinate': 'GPS coordinate',
+        'date': 'date',
+        'dead': 'number of dead persons',
+        'rescue_delay': 'delay for the rescuer to arrive on the accident site',
+        'height_difference': 'height difference of the avalanche',
+        'departement': 'French departement',
+        'carried_away': 'number of carried away persons',
+        'gear': 'progression gear used by the group',
+        'partial_bluried_critical': 'number of critical partial bluried persons',
+        'partial_bluried_non_critical': 'number of non-critical partial bluried  persons',
+        'head_bluried': 'number of head bluried persons',
+        'full_bluried': 'number of full bluried persons',
+        'thickness_max': 'maximum thickness of the avalanche break',
+        'move_direction': 'moving direction of the group when the avalanche started',
+        'number_of_persons': 'number of persons of the group',
+        'inclination': 'inclination of the slope',
+        'safe': 'number of safe persons',
+        'width': 'width of the avalanche',
+        'length': 'length of the avalanche',
+        'mountain_area': 'mountain area',
+        'alert_device': 'device used to alert',
+        'orientation': 'orientation of the slope',
+        'alert_person': 'person who alerted',
+        'doctor_on_site': 'indicate if a doctor was on site',
+        'snow_quality': 'quality of snow',
+        'location': 'location of the accident',
+        'start_type': 'type of avalanche start',
+    }
+
+    ##############################################
+
+    @classmethod
+    def from_json(cls, data: dict) -> 'Accident':
+        kwargs = {}
+        for key, value in data.items():
+            if value is not None:
+                value_cls = cls.ATTRIBUTE_TYPES[key]
+                if value_cls is Coordinate:
+                    if isinstance(value, str):
+                        value = Coordinate(value=value)
+                    else:
+                        value = Coordinate(**value)
+                elif value_cls is datetime.datetime:
+                    value = datetime.datetime.fromisoformat(value)
+                elif value_cls is Delay:
+                    value = Delay(minutes=value)
+                elif issubclass(value_cls, Enum):
+                    value = getattr(value_cls, value.upper())
+                else:
+                    value = value_cls(value)
+            kwargs[key] = value
+        return cls(**kwargs)
 
     ##############################################
 
@@ -55,6 +161,17 @@ class Accident:
 class Accidents:
 
     JSON_ENCODER = None
+
+    ##############################################
+
+    @classmethod
+    def load_json(cls, path: Path) -> 'Accidents':
+        with open(path, 'r') as fh:
+            data = json.load(fh)
+        accidents = cls()
+        for accident_data in data:
+            accidents += Accident.from_json(accident_data)
+        return accidents
 
     ##############################################
 
