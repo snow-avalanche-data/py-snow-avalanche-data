@@ -27,7 +27,9 @@ from pprint import pprint
 
 from Avalanche.Anena import AccidentBook, Accidents, Accident
 
-xls_paths = Path('xls').glob('tableau-accidents-*-*.xls')
+####################################################################################################
+
+xls_paths = Path('data').joinpath('anena-xls').glob('tableau-accidents-*-*.xls')
 xls_paths = sorted(xls_paths)
 
 if False:
@@ -46,10 +48,3 @@ if True:
     path = Path('anena-accidents.json')
     print(f'Write {path}')
     accidents.write_json(path)
-
-    # for sheet in book[0]:
-        # print(sheet.name)
-        # print(sheet.column_titles)
-    # sheet = book[1]
-    # for row in sheet:
-    #     anena_victim = Victim.from_2019(row)
