@@ -69,56 +69,56 @@ class Activity(EnumMixin, Enum):
 ####################################################################################################
 
 class Gear(EnumMixin, Enum):
-    CAR = auto()
-    CROSS_COUNTRY_SKIING = auto()
-    ON_FOOT = auto()
     SKI = auto()
     SNOWBOARD = auto()
+    CROSS_COUNTRY_SKIING = auto()
     SNOWSHOE = auto()
+    ON_FOOT = auto()
+    CAR = auto()
 
 ####################################################################################################
 
 class MoveDirection(EnumMixin, Enum):
-    CROSS = auto()
-    DOWN = auto()
-    STOP = auto()
     UP = auto()
+    DOWN = auto()
+    CROSS = auto()
+    STOP = auto()
 
 ####################################################################################################
 
 class AlertPerson(EnumMixin, Enum):
-    OTHER = auto()
     VICTIM = auto()
     WITNESS = auto()
     WITNESS_RESCUER = auto()
+    OTHER = auto()
 
 ####################################################################################################
 
 class AlertDevice(EnumMixin, Enum):
     CELLPHONE = auto()
-    OTHER = auto()
-    PHONE = auto()
     RADIO = auto()
+    PHONE = auto()
+    OTHER = auto()
 
 ####################################################################################################
 
 class StartReason(EnumMixin, Enum):
     NATURAL = auto()
-    SELF = auto()
     SERAC_CORNICE = auto()
+    SELF = auto()
     THIRD_PARTY = auto()
 
 ####################################################################################################
 
 class Orientation(EnumMixin, Enum):
-    E = auto()
     N = auto()
     NE = auto()
-    NW = auto()
-    S = auto()
+    E = auto()
     SE = auto()
+    S = auto()
     SW = auto()
     W = auto()
+    NW = auto()
 
 ####################################################################################################
 
@@ -135,8 +135,8 @@ class SnowQuality(EnumMixin, Enum):
 ####################################################################################################
 
 class SnowCohesion(EnumMixin, Enum):
-    HARD = auto()
     SOFT = auto()
+    HARD = auto()
 
 ####################################################################################################
 
@@ -158,16 +158,15 @@ class Coordinate:
 
     ##############################################
 
-    def __init__(self, value: str) -> None:
-        value = value.lower()
+    def __init__(self, latitude: list=None, longitude: list=None, value: str=None ) -> None:
         self._value = value
-        self._latidude = None
-        self._longitude = None
+        self._latidude = latitude
+        self._longitude = longitude
 
     ##############################################
 
     def __repr__(self) -> str:
-        return self._value
+        return str(self._value)
 
     ##############################################
 
