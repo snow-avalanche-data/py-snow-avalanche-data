@@ -18,7 +18,12 @@
 #
 ####################################################################################################
 
-"""Module to convert Anena XLS data files to JSON.
+"""Module to convert Anena XLS data files to the JSON format.
+
+Anena XLS files from 2010 to 2017 are exported from the `Sphinx iQ2`
+<https://www.lesphinx-developpement.fr/logiciels/enquete-analyse-sphinx-iq>`_ proprietary software.
+Only 39 variables of the 139 are exported.
+
 """
 
 ####################################################################################################
