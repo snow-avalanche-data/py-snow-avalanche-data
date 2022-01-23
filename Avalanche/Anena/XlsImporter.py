@@ -18,6 +18,11 @@
 #
 ####################################################################################################
 
+"""Module to convert Anena XLS data files to JSON.
+"""
+
+####################################################################################################
+
 __all__ = [
     'AccidentBook',
     'Accident',
@@ -26,7 +31,7 @@ __all__ = [
 
 ####################################################################################################
 
-from enum import Enum, auto
+from enum import Enum
 from pathlib import Path
 from typing import Iterator
 import datetime
@@ -37,6 +42,10 @@ import re
 # import csv
 # import pandas as pd   # requires xlrd
 import xlrd
+
+from Avalanche.Data import DataType
+from Avalanche.Data.DataType import Delay, Inclination
+from Avalanche.Data import Accident as DataAccident
 
 ####################################################################################################
 
@@ -72,21 +81,15 @@ class MappedEnum:
     def __init_subclass__(cls, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         cls._subclasses.append(cls)
-
-    ##############################################
-
-    @classmethod
-    def _init(cls) -> None:
-        for subcls in cls._subclasses:
-            subcls._init_map()
+        cls._init_map()
 
     ##############################################
 
     @classmethod
     def _init_map(cls) -> None:
-        map_ = cls.fr_map()
+        map_ = cls.MAP
         for key, value in map_.items():
-            map_[key] = getattr(cls, value)
+            map_[key] = getattr(cls.CLS, value)
         cls._map[cls] = map_
 
     ##############################################
@@ -104,207 +107,131 @@ class MappedEnum:
 
 ####################################################################################################
 
-class Activity(MappedEnum, Enum):
-    EDF = auto()
-    HIKING = auto()
-    HOME = auto()
-    HUT_ACCESS = auto()
-    MILITARY = auto()
-    MINING = auto()
-    MOUNTAINEERING = auto()
-    OFF_ROAD = auto()
-    OTHER = auto()
-    ROAD = auto()
-    SKI_SLOPE = auto()
-    SKI_SLOPE_MAINTENANCE = auto()
+class Activity(MappedEnum):
+    CLS = DataType.Activity
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'accès refuge gardien ski rando': 'HUT_ACCESS',
-            'alpinisme': 'MOUNTAINEERING',
-            'autre': 'OTHER',
-            'entrainement militaire descente couloir': 'MILITARY',
-            'equipement piste': 'SKI_SLOPE_MAINTENANCE',
-            'habitation': 'HOME',
-            'hors-piste': 'OFF_ROAD',
-            'minage': 'MINING',
-            'piste': 'SKI_SLOPE',
-            'randonnée': 'HIKING',
-            'relevés EDF / déplacement ski de rando': 'EDF',
-            'voie de communication': 'ROAD',
-        }
+    MAP = {
+        'accès refuge gardien ski rando': 'HUT_ACCESS',
+        'alpinisme': 'MOUNTAINEERING',
+        'autre': 'OTHER',
+        'entrainement militaire descente couloir': 'MILITARY',
+        'equipement piste': 'SKI_SLOPE_MAINTENANCE',
+        'habitation': 'HOME',
+        'hors-piste': 'OFF_ROAD',
+        'minage': 'MINING',
+        'piste': 'SKI_SLOPE',
+        'randonnée': 'HIKING',
+        'relevés EDF / déplacement ski de rando': 'EDF',
+        'voie de communication': 'ROAD',
+    }
 
 ####################################################################################################
 
-class Gear(MappedEnum, Enum):
-    CAR = auto()
-    CROSS_COUNTRY_SKIING = auto()
-    ON_FOOT = auto()
-    SKI = auto()
-    SNOWBOARD = auto()
-    SNOWSHOE = auto()
+class Gear(MappedEnum):
+    CLS = DataType.Gear
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'à pieds': 'ON_FOOT',
-            'raquettes': 'SNOWSHOE',
-            'ski fond': 'CROSS_COUNTRY_SKIING',
-            'ski': 'SKI',
-            'snowboard': 'SNOWBOARD',
-            'véhicule route': 'CAR',
-        }
+    MAP = {
+        'à pieds': 'ON_FOOT',
+        'raquettes': 'SNOWSHOE',
+        'ski fond': 'CROSS_COUNTRY_SKIING',
+        'ski': 'SKI',
+        'snowboard': 'SNOWBOARD',
+        'véhicule route': 'CAR',
+    }
 
 ####################################################################################################
 
-class MoveDirection(MappedEnum, Enum):
-    CROSS = auto()
-    DOWN = auto()
-    STOP = auto()
-    UP = auto()
+class MoveDirection(MappedEnum):
+    CLS = DataType.MoveDirection
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'montée': 'UP',
-            'traversée': 'CROSS',
-            'arrêt': 'STOP',
-            'descente': 'DOWN',
-        }
+    MAP = {
+        'montée': 'UP',
+        'traversée': 'CROSS',
+        'arrêt': 'STOP',
+        'descente': 'DOWN',
+    }
 
 ####################################################################################################
 
-class AlertPerson(MappedEnum, Enum):
-    OTHER = auto()
-    VICTIM = auto()
-    WITNESS = auto()
-    WITNESS_RESCUER = auto()
+class AlertPerson(MappedEnum):
+    CLS = DataType.AlertPerson
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'autre': 'OTHER',
-            'témoin secouriste': 'WITNESS_RESCUER',
-            'témoin': 'WITNESS',
-            'victime': 'VICTIM',
-        }
+    MAP = {
+        'autre': 'OTHER',
+        'témoin secouriste': 'WITNESS_RESCUER',
+        'témoin': 'WITNESS',
+        'victime': 'VICTIM',
+    }
 
 ####################################################################################################
 
-class AlertDevice(MappedEnum, Enum):
-    CELLPHONE = auto()
-    OTHER = auto()
-    PHONE = auto()
-    RADIO = auto()
+class AlertDevice(MappedEnum):
+    CLS = DataType.AlertDevice
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'autre': 'OTHER',
-            'radio': 'RADIO',
-            'tél. fixe': 'PHONE',
-            'tél.portable': 'CELLPHONE',
-        }
+    MAP = {
+        'autre': 'OTHER',
+        'radio': 'RADIO',
+        'tél. fixe': 'PHONE',
+        'tél.portable': 'CELLPHONE',
+    }
 
 ####################################################################################################
 
-class StartReason(MappedEnum, Enum):
-    NATURAL = auto()
-    SELF = auto()
-    SERAC_CORNICE = auto()
-    THIRD_PARTY = auto()
+class StartReason(MappedEnum):
+    CLS = DataType.StartReason
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'accidentelle soi-même': 'SELF',
-            'accidentelle tiers': 'THIRD_PARTY',
-            'naturelle sérac/corniche': 'SERAC_CORNICE',
-            'naturelle': 'NATURAL',
-        }
+    MAP = {
+        'accidentelle soi-même': 'SELF',
+        'accidentelle tiers': 'THIRD_PARTY',
+        'naturelle sérac/corniche': 'SERAC_CORNICE',
+        'naturelle': 'NATURAL',
+    }
 
 ####################################################################################################
 
-class Orientation(MappedEnum, Enum):
-    E = auto()
-    N = auto()
-    NE = auto()
-    NW = auto()
-    S = auto()
-    SE = auto()
-    SW = auto()
-    W = auto()
+class Orientation(MappedEnum):
+    CLS = DataType.Orientation
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'E': 'E',
-            'N': 'N',
-            'NE': 'NE',
-            'NO': 'NW',
-            'O': 'W',
-            'S': 'S',
-            'SE': 'SE',
-            'SO': 'SW',
-        }
+    MAP = {
+        'E': 'E',
+        'N': 'N',
+        'NE': 'NE',
+        'NO': 'NW',
+        'O': 'W',
+        'S': 'S',
+        'SE': 'SE',
+        'SO': 'SW',
+    }
 
 ####################################################################################################
 
-class StartType(MappedEnum, Enum):
-    LINEAR = auto()
-    PONCTUAL = auto()
+class StartType(MappedEnum):
+    CLS = DataType.StartType
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'linéaire': 'LINEAR',
-            'ponctuel': 'PONCTUAL',
-        }
+    MAP = {
+        'linéaire': 'LINEAR',
+        'ponctuel': 'PONCTUAL',
+    }
 
 ####################################################################################################
 
-class SnowQuality(MappedEnum, Enum):
-    DRY = auto()
-    WET = auto()
+class SnowQuality(MappedEnum):
+    CLS = DataType.SnowQuality
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'humide': 'WET',
-            'sèche': 'DRY',
-        }
+    MAP = {
+        'humide': 'WET',
+        'sèche': 'DRY',
+    }
 
 ####################################################################################################
 
-class SnowCohesion(MappedEnum, Enum):
-    HARD = auto()
-    SOFT = auto()
+class SnowCohesion(MappedEnum):
+    CLS = DataType.SnowCohesion
 
-    @classmethod
-    def fr_map(cls) -> dict[str, str]:
-        return {
-            'dure': 'HARD',
-            'tendre': 'SOFT',
-        }
-
-####################################################################################################
-
-MappedEnum._init()
-
-####################################################################################################
-
-class Inclination:
-
-    ##############################################
-
-    def __init__(self, value: str) -> None:
-        self._value = value
-
-    ##############################################
-
-    def __repr__(self) -> str:
-        return self._value
+    MAP = {
+        'dure': 'HARD',
+        'tendre': 'SOFT',
+    }
 
 ####################################################################################################
 
@@ -359,22 +286,7 @@ class Coordinate:
 
 ####################################################################################################
 
-class Delay:
-
-    ##############################################
-
-    def __init__(self, hours: int=0, minutes: int=0) -> None:
-        self._minutes = int(hours * 60 + minutes)
-
-    ##############################################
-
-    @property
-    def minutes(self) -> int:
-        return self._minutes
-
-####################################################################################################
-
-class Accident:
+class Accident(DataAccident.Accident):
 
     _MAP = {}
     for keys, attribute, cls in (
@@ -458,23 +370,6 @@ class Accident:
         for name in sorted(cls.column_values.keys()):
             print(name, cls.column_values[name])
 
-    ##############################################
-
-    def __init__(self, **kwargs: dict) -> None:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-    ##############################################
-
-    @property
-    def week(self) -> int:
-        return self.date.isocalendar().week
-
-    ##############################################
-
-    def to_json(self) -> dict:
-        return self.__dict__
-
 ####################################################################################################
 
 class AccidentSheetContextManager:
@@ -554,52 +449,8 @@ class AccidentEncoder(json.JSONEncoder):
 
 ####################################################################################################
 
-class Accidents:
-
-    ##############################################
-
-    def __init__(self) -> None:
-        self._items = []
-
-    ##############################################
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __iter__(self) -> Iterator[Accident]:
-        return iter(self._items)
-
-    ##############################################
-
-    # | 'Accidents'
-    def append(self, item: Accident) -> None:
-        match item:
-            case Accident():
-                self._items.append(item)
-            case Accidents():
-                self._items.extend(item)
-
-    def __iadd__(self, item: Accident) -> 'Accidents':
-        self.append(item)
-        return self
-
-    ##############################################
-
-    def to_json(self) -> list:
-        return [_.to_json() for _ in self]
-
-    ##############################################
-
-    def write_json(self, path: Path) -> None:
-        with open(path, 'w') as fh:
-            data = json.dumps(
-                self.to_json(),
-                cls=AccidentEncoder,
-                indent=4,
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-            fh.write(data)
+class Accidents(DataAccident.Accidents):
+    JSON_ENCODER = AccidentEncoder
 
 ####################################################################################################
 
@@ -706,8 +557,12 @@ class AccidentSheet:
         return [_.replace(os.linesep, ' ').replace('  ', ' ').replace('  ', ' ')
                 for _ in self._column_titles]
 
+    ##############################################
+
     def __len__(self) -> int:
         return self._sheet.nrows
+
+    ##############################################
 
     def row_values(self, i: int) -> list[int | str]:
         row = self._sheet.row(i)
@@ -724,6 +579,8 @@ class AccidentSheet:
                 value = cell.value
             values.append(value)
         return values
+
+    ##############################################
 
     def __iter__(self):
         # for row in self._sheet.get_rows():
