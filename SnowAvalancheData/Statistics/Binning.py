@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# Avalanche - 
+# SnowAvalancheData - 
 # Copyright (C) 2021 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
@@ -29,8 +29,8 @@ __all__ = [
 
 import numpy as np
 
-from Avalanche.Statistics.IntervalArithmetic import Interval, FloatMinusInfinity, FloatPlusInfinity
-from Avalanche.Statistics.Functions import rint
+from SnowAvalancheData.Statistics.IntervalArithmetic import Interval, FloatMinusInfinity, FloatPlusInfinity
+from SnowAvalancheData.Statistics.Functions import rint
 
 ####################################################################################################
 

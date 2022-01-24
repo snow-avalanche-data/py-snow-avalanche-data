@@ -4,7 +4,7 @@
 
 ####################################################################################################
 #
-# Avalanche - 
+# SnowAvalancheData - 
 # Copyright (C) 2021 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
@@ -26,9 +26,9 @@ from enum import Enum
 from pathlib import Path
 from pprint import pprint
 
-from Avalanche.Data import Accidents, Accident
-from Avalanche.Data.DataType import *
-from Avalanche.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
+from SnowAvalancheData.Data import Accidents, Accident
+from SnowAvalancheData.Data.DataType import *
+from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
 
 ####################################################################################################
 
