@@ -29,6 +29,7 @@ __all__ = [
 
 ####################################################################################################
 
+from enum import Enum, auto
 import math
 
 import numpy as np
@@ -182,16 +183,25 @@ class WeightedDataSetMoment:
 
 ####################################################################################################
 
+class UnitType(Enum):
+    COUNT = auto()
+    NORMALISED = auto()
+    PERCENT = auto()
+
+####################################################################################################
+
 class Histogram:
 
     ##############################################
 
-    def __init__(self, binning: Binning1D, title: str='') -> None:
+    def __init__(self, binning: Binning1D, **kwargs) -> None:
         if isinstance(binning, Binning1D):
             self._binning = binning
         else:
             raise ValueError
-        self._title = str(title)
+        self._title = str(kwargs.get('title', ''))
+        self._unit = str(kwargs.get('unit', ''))
+        self._y_unit = UnitType.COUNT
         self._make_array(self._binning.array_size)
         self.data_set_moment = DataSetMoment()
         self.clear_feature()
@@ -205,8 +215,11 @@ class Histogram:
     ##############################################
 
     def clone(self) -> 'Histogram':
+        # , title=self._title, unit=self._unit
         histogram = self.__class__(self._binning.clone())
         histogram += self
+        for _ in ('_title', '_unit', '_y_unit'):
+            setattr(histogram, getattr(self, _))
         return histogram
 
     ##############################################
@@ -291,6 +304,14 @@ class Histogram:
         self._title = str(value)
 
     @property
+    def unit(self) -> str:
+        return self._unit
+
+    @property
+    def y_unit(self) -> UnitType:
+        return self._y_unit
+
+    @property
     def binning(self) -> Binning1D:
         return self._binning
 
@@ -299,20 +320,32 @@ class Histogram:
         return self._accumulator
 
     @property
-    def binning_accumulator(self):
+    def binning_accumulator(self) -> np.ndarray:
         return self._accumulator[1:-1]
 
     @property
-    def x_values(self):
+    def underflow_accumulator(self) -> float:
+        return self._accumulator[0]
+
+    @property
+    def overflow_accumulator(self) -> float:
+        return self._accumulator[-1]
+
+    @property
+    def has_overflow(self) -> bool:
+        return self.underflow_accumulator != 0 or self.overflow_accumulator != 0
+
+    @property
+    def x_values(self) -> np.ndarray:
         return self._binning.bin_centers
 
     @property
-    def min(self):
+    def min(self) -> float:
         # return min(self._accumulator) # - self._errors
         return float(np.min(self._accumulator))
 
     @property
-    def max(self):
+    def max(self) -> float:
         # return max(self._accumulator) # + self._errors
         return float(np.max(self._accumulator))
 
@@ -375,16 +408,16 @@ class Histogram:
             else:
                 raise ValueError
         else:
-            float_obj = float(obj)
-            self._accumulator *= float_obj
-            self._sum_weight_square *= float_obj**2
-            # self.data_set_moment *= float_obj
+            obj = float(obj)
+            self._accumulator *= obj
+            self._sum_weight_square *= obj**2
+            # self.data_set_moment *= obj
         self.clear_feature()
         return self
 
     ##############################################
 
-    def __idiv__(self, obj: 'Histogram') -> 'Histogram':
+    def __itruediv__(self, obj: 'Histogram') -> 'Histogram':
         # Fixme: data_set_moment
         if isinstance(obj, Histogram):
             if self.is_consistent_with(obj):
@@ -427,7 +460,7 @@ class Histogram:
 
     ##############################################
 
-    def __div__(obj1, obj2: 'Histogram') -> 'Histogram':
+    def __truediv__(obj1, obj2: 'Histogram') -> 'Histogram':
         obj = obj1.clone()
         obj /= obj2
         return obj
@@ -460,6 +493,11 @@ class Histogram:
 
     @property
     def integral(self) -> float:
+        """Compute histogram integral.
+
+        Warning: overflow bin are summed.
+
+        """
         if self._integral is None:
             self._integral = self._accumulator.sum()
         return self._integral
@@ -523,29 +561,47 @@ class Histogram:
 
     ##############################################
 
-    def normalise(self, scale: float=1) -> 'Histogram':
-        histogram = self.clone()
-        histogram /= histogram.integral
-        # if scale != 1:
-        #     self._accumulator *= scale
+    def _clone(self, clone=True) -> 'Histogram':
+        if clone:
+            return self.clone()
+        else:
+            return self
+
+    ##############################################
+
+    def normalise(self, scale: float=1, clone: bool=True, to_percent: bool=False) -> 'Histogram':
+        if to_percent:
+            scale = 100
+        match scale:
+            case 1:
+                self._y_unit = UnitType.NORMALISED
+            case 100:
+                self._y_unit = UnitType.PERCENT
+        histogram = self._clone(clone)
+        histogram *= scale / histogram.integral
         histogram.clear_feature()
         return histogram
 
     ##############################################
 
-    def cumulative(self, normalise: bool=True) -> 'Histogram':
-        histogram = self.clone()
+    def cumulative(self, normalise: bool=True, clone=True) -> 'Histogram':
+        if self.has_overflow:
+            raise NotImplementedError
+        histogram = self._clone(clone)
         histogram.clear_feature()
-        histogram._accumulator = np.cumsum(histogram._accumulator)   # overflow ?
+        histogram._accumulator = np.cumsum(histogram._accumulator)
+        histogram._accumulator[-1] = 0   # clear cumsum on overflow bin
         histogram._sum_weight_square = np.cumsum(histogram._sum_weight_square)
         if normalise:
-            histogram.normalise()
+            histogram *= 100 / histogram._accumulator[-2]
+            histogram._y_unit = UnitType.PERCENT
+        histogram.title = f'{self.title} cumulative'
         return histogram
 
     ##############################################
 
-    def inverse_cumulative(self, normalise: bool=True) -> 'Histogram':
-        histogram = self.clone()
+    def inverse_cumulative(self, normalise: bool=True, clone=True) -> 'Histogram':
+        histogram = self._clone(clone)
         denominator = histogram.integral
         if normalise:
             histogram._accumulator /= denominator
@@ -574,7 +630,6 @@ class Histogram:
         denominator = denominator.inverse_cumulative(normalise=False)
         purity = numerator / denominator
         return purity
-
 
    ###############################################
 
@@ -626,14 +681,22 @@ class Histogram:
             x_errors = x_errors[indices]
             y_errors = y_errors[indices]
 
-        return x, y, x_errors, y_errors
+        if not non_null:
+            edges = np.zeros(len(y) +1)
+            edges[:-1] = binning.bin_lower_edges()
+            edges[-1] = binning.interval.sup
+            return x, y, x_errors, y_errors, edges
+        else:
+            return x, y, x_errors, y_errors
 
    ###############################################
 
     def __str__(self):
         binning = self._binning
         text = f"""
-Histogram 1D {self.title}
+Histogram 1D: {self._title}
+  unit: {self._unit}
+  y_unit: {self._y_unit}
   interval: {binning._interval}
   number of bins: {binning._number_of_bins}
   bin width: {binning._bin_width:g}
@@ -657,15 +720,38 @@ class EnumHistogram(Histogram):
 
     ##############################################
 
-    def __init__(self, cls, title: str='') -> None:
+    def __init__(self, cls, **kwargs) -> None:
         # Fixme: private API
+        self._cls = cls
         self._map = cls._value2member_map_
         self._labels = [str(_).split('.')[1] for _ in cls]
         values = self._map.keys()
         inf = min(values)
         sup = max(values) +1
         binning = Binning1D(Interval(inf, sup), bin_width=1)
-        super().__init__(binning, title=title)
+        super().__init__(binning, **kwargs)
+
+    ##############################################
+
+    def clone(self) -> 'EnumHistogram':
+        # Fixme:
+        #  histogram = super().clone()
+        histogram = self.__class__(self._cls)
+        histogram += self
+        for _ in ('_title', '_unit', '_y_unit'):
+            setattr(histogram, _, getattr(self, _))
+        return histogram
+
+    ##############################################
+
+    def to_json(self) -> dict:
+        raise NotImplementedError
+
+    ##############################################
+
+    @classmethod
+    def from_json(cls, data: dict) -> 'EnumHistogram':
+        raise NotImplementedError
 
     ##############################################
 
@@ -681,7 +767,7 @@ class EnumHistogram(Histogram):
 
     ##############################################
 
-    def bin_label(self, i: int):
+    def bin_label(self, i: int) -> str:
         try:
             return self._map[i]
         except KeyError:
@@ -720,5 +806,3 @@ class Histogram2D(Histogram):
         self.data_set_moment = DataSetMomentND(dimension=2)
 
         # self.clear_feature()
-
-

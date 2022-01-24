@@ -54,17 +54,18 @@ attribute_title = {
 
 print('Create histograms')
 histograms = {}
-for attribute, type_ in Accident.ATTRIBUTE_TYPES.items():
-    title = attribute_title.get(attribute, attribute)
+for attribute, type_ in Accident.ATTRIBUTE_TYPE.items():
+    title = attribute_title.get(attribute, attribute.replace('_', ' '))
+    unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
     if issubclass(type_, Enum):
-        histograms[attribute] = EnumHistogram(type_, title=title)
+        histograms[attribute] = EnumHistogram(type_, title=title, unit=unit)
     elif type_ in (int, float):
         print(f'  Scan inf/sup for {attribute}')
         inf, sup = filtered_accidents.inf_sup(attribute)
         sup += 1
         bin_width = attribute_bin_width.get(attribute, 1)
         print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
-        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title)
+        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
 
 print('Fill histograms')
 for accident in filtered_accidents:
@@ -73,6 +74,9 @@ for accident in filtered_accidents:
         value = getattr(accident, attribute)
         if value is not None:
             histogram.fill(value)
+
+for attribute, histogram in histograms.items():
+    histogram.normalise(to_percent=True, clone=False)
 
 # for attribute, histogram in histograms.items():
 #     print("="*100)
@@ -85,7 +89,13 @@ print('Plot...')
 
 # histogram = histograms['bra_level']
 # print(histogram)
-# print(histogram.to_graph())
+# # print(histogram.to_graph())
+# c = histogram.normalise(scale=100)
+# print(c)
+# c = histogram.cumulative(normalise=False)
+# print(c)
+# c = histogram.cumulative(normalise=True)
+# print(c)
 
 from SnowAvalancheData.Plot import Figure
 import matplotlib.pyplot as plt
@@ -163,7 +173,6 @@ for attribute in (
 
 plt.show()
 
-# remove empty plot in figure
 # too large label
 # explore correlation
 # plot ratio

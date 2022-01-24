@@ -37,7 +37,7 @@ from .DataType import *
 
 class Accident:
 
-    ATTRIBUTE_TYPES = {
+    ATTRIBUTE_TYPE = {
         'activity': Activity,
         'altitude': int,
         'injured': int,
@@ -115,6 +115,28 @@ class Accident:
         'start_type': 'type of avalanche start',
     }
 
+    ATTRIBUTE_UNIT = {
+        'altitude': 'm',
+        'rescue_delay': 'min',
+        'height_difference': 'm',
+        'thickness_max': 'cm',
+        'inclination': 'degree',
+        'width': 'm',
+        'length': 'm',
+    }
+    for _ in (
+        'injured',
+        'dead',
+        'carried_away',
+        'partial_bluried_critical',
+        'partial_bluried_non_critical',
+        'head_bluried',
+        'full_bluried',
+        'number_of_persons',
+        'safe',
+    ):
+        ATTRIBUTE_UNIT[_] = 'number of persons'
+
     ##############################################
 
     @classmethod
@@ -122,7 +144,7 @@ class Accident:
         kwargs = {}
         for key, value in data.items():
             if value is not None:
-                value_cls = cls.ATTRIBUTE_TYPES[key]
+                value_cls = cls.ATTRIBUTE_TYPE[key]
                 if value_cls is Coordinate:
                     if isinstance(value, str):
                         value = Coordinate(value=value)

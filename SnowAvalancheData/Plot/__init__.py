@@ -28,45 +28,80 @@ from SnowAvalancheData.Statistics.Histogram import EnumHistogram, Histogram
 
 class Figure:
 
+    A4 = (297, 210)
+    A5 = (A4[1], A4[0]//2)   # 148
+
+    ##############################################
+
+    @classmethod
+    def mm2in(cls, x: float) -> float:
+        return x / 25.4
+
     ##############################################
 
     def __init__(self, number_of_rows: int, number_of_columns: int) -> None:
-        # figsize=(5, 2.7), layout='constrained'
+
+        # https://matplotlib.org/stable/tutorials/intermediate/constrainedlayout_guide.html
+        # https://matplotlib.org/stable/tutorials/intermediate/tight_layout_guide.html
+        self._figure, self._axes = plt.subplots(
+            number_of_rows, number_of_columns,
+            dpi=100,
+            figsize=[self.mm2in(_) for _ in self.A5],
+            constrained_layout=True,
+            # layout='constrained',
+            # constrained_layout_pads=0.1,
+        )
+        # self._figure.tight_layout(pad=3.0, w_pad=3.0, h_pad=3.0)
+
         self._number_of_columns = number_of_columns
-        self._figure, self._axes = plt.subplots(number_of_rows, number_of_columns)
-        self._location = 0
+        self._location = -1
+        for _ in self._axes.flat:
+            _.set_visible(False)
 
     ##############################################
 
-    def next_location(self) -> tuple[int, int]:
-        r = int(self._location // self._number_of_columns)
-        c = int(self._location % self._number_of_columns)
+    def next_location(self) -> int:
         self._location += 1
-        return r, c
+        return self._location
 
     ##############################################
 
-    def _get_axe(self, axe: list=None):
-        r, c = axe or self.next_location()
-        return self._axes[r][c]
+    def _get_axe(self, axe: list=None) -> mpl.axes:
+        _ = self._axes.flat[self.next_location()]
+        _.set_visible(True)
+        return _
 
     ##############################################
 
     def plot_bar(self, histogram: EnumHistogram, title: str=None, axe: list=None) -> None:
+        labels = []
+        has_long_label = False
+        for label in histogram.labels:
+            if len(label) > 5:
+                label = label[:5]
+                has_long_label = True
+            labels.append(label)
+
         ax = self._get_axe(axe)
         indexes, y, y_errors = histogram.to_graph()
         ax.bar(indexes, y, width=.3, yerr=y_errors, label=title or histogram.title)
         ax.set_title(title)
-        ax.set_xticks(indexes, labels=histogram.labels)
+        ax.set_xticks(indexes, labels=labels)
         ax.grid(True)
+        if has_long_label:
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(45)
 
     ##############################################
 
     def plot_histogram(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
+        x, y, x_errors, y_errors, edges = histogram.to_graph(non_null=False)
+        ax.stairs(y, edges, fill=True)
         x, y, x_errors, y_errors = histogram.to_graph()
         ax.errorbar(x, y, y_errors, fmt='o', linewidth=2, capsize=6)
         ax.set_title(title or histogram.title)
+        ax.set_xlabel(histogram.unit)
         # ax.set_xticks(indexes, labels=histogram.labels)
         ax.grid(True)
 
