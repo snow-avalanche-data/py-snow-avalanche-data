@@ -214,3 +214,68 @@ class Accidents:
                 sort_keys=True,
             )
             fh.write(data)
+
+    ##############################################
+
+    def and_filter(self, **kwargs) -> 'FilteredAccidents':
+        return FilteredAccidents(self, **kwargs)
+
+####################################################################################################
+
+class FilteredAccidents:
+
+    ##############################################
+
+    def __init__(self, parent: Accidents, items=None, **kwargs) -> None:
+        self._parent = parent
+        if items is not None:
+            self._items = list(items)
+        else:
+            self._items = list(iter(parent))
+            if kwargs:
+                self.and_filter(**kwargs)
+
+    ##############################################
+
+    @property
+    def parent(self):
+        return self._parent
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __iter__(self) -> Iterator[Accident]:
+        return iter(self._items)
+
+    ##############################################
+
+    def and_filter(self, **kwargs) -> None:
+        def function(accident: Accident):
+            for attribute, attribute_filter in kwargs.items():
+                value = getattr(accident, attribute)
+                if not attribute_filter(value):
+                    return False
+            return True
+        self._items = list(filter(function, self._items))
+
+    ##############################################
+
+    def __ior__(self, other: 'FilteredAccidents') -> 'FilteredAccidents':
+        items = set(iter(self)) | set(iter(other))
+        return FilteredAccidents(self.parent, items)
+
+    ##############################################
+
+    def inf_sup(self, attribute: str) -> tuple[int, int]:
+        inf = None
+        sup = None
+        for item in self:
+            value = getattr(item, attribute)
+            if value is not None:
+                if inf is None:
+                    inf = value
+                    sup = value
+                else:
+                    inf = min(inf, value)
+                    sup = max(sup, value)
+        return inf, sup

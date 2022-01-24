@@ -62,8 +62,6 @@ class Histogram:
     def binning(self) -> Binning1D:
         return self._binning
 
-    ##############################################
-
     @property
     def accumulator(self) -> np.ndarray:
         return self._accumulator
@@ -164,11 +162,14 @@ Histogram 1D
   bin width: {binning._bin_width:g}
 """
         for i in binning.bin_iterator(xflow=True):
+            accumulator = self._accumulator[i]
+            if accumulator == 0:
+                continue
             text += '%3u %s %s = %g +- %g\n' % (
                 i,
                 self.bin_label(i),
                 str(binning.bin_interval(i)),
-                self._accumulator[i],
+                accumulator,
                 self.get_bin_error(i),
             )
         return text
@@ -211,11 +212,18 @@ class EnumHistogram(Histogram):
     def __init__(self, cls) -> None:
         # Fixme: private API
         self._map = cls._value2member_map_
+        self._labels = [str(_).split('.')[1] for _ in cls]
         values = self._map.keys()
         inf = min(values)
-        sup = max(values)
+        sup = max(values) +1
         binning = Binning1D(Interval(inf, sup), bin_width=1)
         super().__init__(binning)
+
+    ##############################################
+
+    @property
+    def labels(self) -> list[str]:
+        return self._labels
 
     ##############################################
 
@@ -230,3 +238,18 @@ class EnumHistogram(Histogram):
             return self._map[i]
         except KeyError:
             return ''
+
+    ##############################################
+
+    def to_graph(self):
+        self.compute_errors()
+
+        binning = self._binning
+        bin_slice = binning.bin_slice()
+
+        x_values = np.arange(binning.number_of_bins)
+
+        y_values = np.copy(self._accumulator[bin_slice])
+        y_errors = np.copy(self._errors[bin_slice])
+
+        return x_values, y_values, y_errors

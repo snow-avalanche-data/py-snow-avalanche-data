@@ -27,25 +27,66 @@ from pathlib import Path
 from pprint import pprint
 
 from Avalanche.Data import Accidents, Accident
-from Avalanche.Data import DataType
-from Avalanche.Statistics.Histogram import EnumHistogram
+from Avalanche.Data.DataType import *
+from Avalanche.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
 
 ####################################################################################################
 
 path = Path('data').joinpath('anena-accidents.json')
 accidents = Accidents.load_json(path)
 
+filtered_accidents = accidents.and_filter(
+    activity=lambda _: _ in (Activity.HIKING, Activity.MOUNTAINEERING),
+)
+
+attribute_bin_width = {
+    'altitude': 100,
+    'height_difference': 30,
+    'length': 50,
+    'rescue_delay': 15,
+    'thickness_max': 10,
+    'width': 5,
+}
+
 histograms = {}
 for attribute, type_ in Accident.ATTRIBUTE_TYPES.items():
     if issubclass(type_, Enum):
         histograms[attribute] = EnumHistogram(type_)
+    elif type_ in (int, float):
+        inf, sup = filtered_accidents.inf_sup(attribute)
+        bin_width = attribute_bin_width.get(attribute, 1)
+        # print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
+        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width))
 
-for accident in accidents:
-    # print()
+for accident in filtered_accidents:
+    # pprint(accident.__dict__)
     for attribute, histogram in histograms.items():
-        histogram.fill(getattr(accident, attribute))
+        value = getattr(accident, attribute)
+        if value is not None:
+            histogram.fill(value)
 
-for attribute, histogram in histograms.items():
-    print("="*100)
-    print(attribute)
-    print(histogram)
+# for attribute, histogram in histograms.items():
+#     print("="*100)
+#     print(attribute)
+#     print(histogram)
+
+####################################################################################################
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+
+# figsize=(5, 2.7), layout='constrained'
+figure, axes = plt.subplots(2, 2)
+
+attribute = 'orientation'
+histogram = histograms[attribute]
+ax = axes[1][1]
+
+indexes, y_values, y_errors = histogram.to_graph()
+bar = ax.bar(indexes, y_values, width=.3, yerr=y_errors, label=attribute)
+ax.set_title(attribute)
+ax.set_xticks(indexes, labels=histogram.labels)
+ax.grid(True)
+
+plt.show()
