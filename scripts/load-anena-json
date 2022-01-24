@@ -1,8 +1,6 @@
 #! /usr/bin/env python3
 
 ####################################################################################################
-
-####################################################################################################
 #
 # SnowAvalancheData - 
 # Copyright (C) 2021 Fabrice Salvaire
@@ -40,12 +38,17 @@ filtered_accidents = accidents.and_filter(
 )
 
 attribute_bin_width = {
-    'altitude': 100,
-    'height_difference': 30,
-    'length': 50,
-    'rescue_delay': 15,
-    'thickness_max': 10,
-    'width': 5,
+    'altitude': 250,   # m
+    'height_difference': 100,   # m
+    'length': 100,   # m
+    'rescue_delay': 15,   # min
+    'thickness_max': 20,   # cm
+    'width': 15,   # m
+}
+
+attribute_title = {
+    'orientation': 'Slope Orientation',
+    'move_direction': 'Moving Direction',
 }
 
 histograms = {}
@@ -54,8 +57,9 @@ for attribute, type_ in Accident.ATTRIBUTE_TYPES.items():
         histograms[attribute] = EnumHistogram(type_)
     elif type_ in (int, float):
         inf, sup = filtered_accidents.inf_sup(attribute)
+        sup += 1
         bin_width = attribute_bin_width.get(attribute, 1)
-        # print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
+        print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
         histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width))
 
 for accident in filtered_accidents:
@@ -72,21 +76,89 @@ for accident in filtered_accidents:
 
 ####################################################################################################
 
-import matplotlib as mpl
+# histogram = histograms['bra_level']
+# print(histogram)
+# print(histogram.to_graph())
+
+from SnowAvalancheData.Plot import Figure
 import matplotlib.pyplot as plt
-import numpy as np
 
-# figsize=(5, 2.7), layout='constrained'
-figure, axes = plt.subplots(2, 2)
+def plot_histogram(figure, attribute):
+    histogram = histograms[attribute]
+    title = attribute_title.get(attribute, attribute)
+    if attribute == 'bra_level':
+        figure.plot_bar_number(histogram, title=title)
+    else:
+        match histogram:
+           case EnumHistogram():
+               figure.plot_bar(histogram, title=title)
+           case Histogram():
+               figure.plot_histogram(histogram, title=title)
 
-attribute = 'orientation'
-histogram = histograms[attribute]
-ax = axes[1][1]
+figure1 = Figure(number_of_rows=2, number_of_columns=3)
+for attribute in (
+        'activity',
+        'altitude',
+        'departement',   # -> map
+        # 'date',
+        'gear',
+):
+    plot_histogram(figure1, attribute)
 
-indexes, y_values, y_errors = histogram.to_graph()
-bar = ax.bar(indexes, y_values, width=.3, yerr=y_errors, label=attribute)
-ax.set_title(attribute)
-ax.set_xticks(indexes, labels=histogram.labels)
-ax.grid(True)
+figure2 = Figure(number_of_rows=2, number_of_columns=4)
+for attribute in (
+        'bra_level',
+        'move_direction',
+        'orientation',
+        'snow_cohesion',
+        #
+        'snow_quality',
+        'start_reason',
+        'start_type',
+        # 'inclination',
+):
+    plot_histogram(figure2, attribute)
+
+figure3 = Figure(number_of_rows=2, number_of_columns=2)
+for attribute in (
+        'length',
+        'width',
+        #
+        'height_difference',
+        'thickness_max',
+):
+    plot_histogram(figure3, attribute)
+
+figure4 = Figure(number_of_rows=3, number_of_columns=4)
+for attribute in (
+        'carried_away',
+        'dead',
+        'full_bluried',
+        'head_bluried',
+        #
+        'injured',
+        'number_of_persons',
+        'partial_bluried_critical',
+        'partial_bluried_non_critical',
+        #
+        'safe',
+):
+    plot_histogram(figure4, attribute)
+
+figure5 = Figure(number_of_rows=2, number_of_columns=2)
+for attribute in (
+        'alert_device',
+        'alert_person',
+        #
+        'rescue_delay',
+        # 'doctor_on_site',
+):
+    plot_histogram(figure5, attribute)
 
 plt.show()
+
+# remove empty plot in figure
+# too large label
+# explore correlation
+# plot ratio
+# plot ->

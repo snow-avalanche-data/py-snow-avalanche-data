@@ -1,7 +1,7 @@
 ####################################################################################################
 #
-# SnowAvalancheData - 
-# Copyright (C) 2022 Fabrice Salvaire
+# Avalanche - 
+# Copyright (C) 2021 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -53,6 +53,14 @@ class Histogram:
 
     ##############################################
 
+    def clone(self) -> 'Histogram':
+        # Fixme: binnning.clone()
+        histogram = self.__class__(self._binning)
+        histogram += self
+        return histogram
+
+    ##############################################
+
     def bin_label(self, i: int):
         return ''
 
@@ -72,6 +80,7 @@ class Histogram:
         """Add a n histogram"""
         if self.is_consistent_with(obj):
             self._accumulator += obj._accumulator
+            self._sum_weight_square += obj._sum_weight_square
         else:
             raise ValueError
         return self
@@ -114,20 +123,22 @@ class Histogram:
     ##############################################
 
     def integral(self, interval=None, interval_x=None):
-        if interval is None and interval_x is None:
-            return self._accumulator.sum()
-        else:
-            if interval_x is not None:
-                start = self.binning.find_bin(interval_x.inf)
-                stop = self.binning.find_bin(interval_x.sup)
-            else:
-                start = interval.inf
-                stop = interval.sup
-            return self._accumulator[start:stop +1].sum(), Interval(start, stop)
+        return self._accumulator.sum()
+        # Fixme: purpose ?
+        # if interval is None and interval_x is None:
+        #     return self._accumulator.sum()
+        # else:
+        #     if interval_x is not None:
+        #         start = self.binning.find_bin(interval_x.inf)
+        #         stop = self.binning.find_bin(interval_x.sup)
+        #     else:
+        #         start = interval.inf
+        #         stop = interval.sup
+        #     return self._accumulator[start:stop +1].sum(), Interval(start, stop)
 
     ##############################################
 
-    def normalise(self, scale=1):
+    def normalise(self, scale: float=1) -> None:
         self._accumulator /= self.integral()
         self._errors_are_dirty = True
         if scale != 1:
@@ -135,21 +146,31 @@ class Histogram:
 
     ##############################################
 
-    def to_graph(self):
+    def to_graph(self, centred=True, non_null=True) -> tuple:
         self.compute_errors()
 
         binning = self._binning
         bin_slice = binning.bin_slice()
 
-        x_values = binning.bin_centers()
-
-        y_values = np.copy(self._accumulator[bin_slice])
+        y = np.copy(self._accumulator[bin_slice])
         y_errors = np.copy(self._errors[bin_slice])
 
-        x_errors = np.empty(x_values.shape)
+        if centred:
+            x = binning.bin_centers()
+        else:
+            x = binning.bin_lower_edges()
+
+        x_errors = np.empty(x.shape)
         x_errors[:] = .5*binning.bin_width
 
-        return x_values, y_values, x_errors, y_errors
+        if non_null:
+            indices = np.where(y != 0)
+            x = x[indices]
+            y = y[indices]
+            x_errors = x_errors[indices]
+            y_errors = y_errors[indices]
+
+        return x, y, x_errors, y_errors
 
    ###############################################
 
@@ -173,35 +194,6 @@ Histogram 1D
                 self.get_bin_error(i),
             )
         return text
-
-   ###############################################
-
-    def find_non_zero_bin_range(self):
-        inf = 0
-        while self._accumulator[inf] == 0:
-            inf += 1
-        sup = len(self._accumulator) -1
-        while self._accumulator[sup] == 0:
-            sup -= 1
-        return Interval(inf, sup)
-
-   ###############################################
-
-    def non_zero_bin_range_histogram(self):
-
-        bin_range = self.find_non_zero_bin_range()
-        print(bin_range)
-        binning = self._binning.sub_binning(self._binning.sub_interval(bin_range))
-        print(binning)
-        histogram = self.__class__(binning)
-        src_slice = slice(bin_range.inf, bin_range.sup +1)
-        dst_slice = slice(binning.first_bin, binning.over_flow_bin)
-        histogram._accumulator[dst_slice] = self._accumulator[src_slice]
-        histogram._sum_weight_square[dst_slice] = self._sum_weight_square[src_slice]
-        histogram._errors[dst_slice] = self._errors[src_slice]
-        histogram.errors_are_dirty = False
-
-        return histogram
 
 ####################################################################################################
 
@@ -242,14 +234,15 @@ class EnumHistogram(Histogram):
     ##############################################
 
     def to_graph(self):
+        # Fixme: duplicated code
         self.compute_errors()
 
         binning = self._binning
         bin_slice = binning.bin_slice()
 
-        x_values = np.arange(binning.number_of_bins)
-
-        y_values = np.copy(self._accumulator[bin_slice])
+        y = np.copy(self._accumulator[bin_slice])
         y_errors = np.copy(self._errors[bin_slice])
 
-        return x_values, y_values, y_errors
+        x = np.arange(binning.number_of_bins)
+
+        return x, y, y_errors

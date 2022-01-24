@@ -178,6 +178,13 @@ class Binning1D:
 
     ##############################################
 
+    def bin_lower_edges(self):
+        return np.linspace(self.bin_lower_edge(self._first_bin),
+                           self.bin_lower_edge(self._last_bin),
+                           self._number_of_bins)
+
+    ##############################################
+
     def bin_centers(self):
         return np.linspace(self.bin_center(self._first_bin),
                            self.bin_center(self._last_bin),
