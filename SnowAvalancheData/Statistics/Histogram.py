@@ -20,16 +20,165 @@
 
 __all__ = [
     'Binning1D',
+    'BinningND',
     'EnumHistogram',
     'Histogram',
+    'Histogram2D',
     'Interval',
 ]
 
 ####################################################################################################
 
+import math
+
 import numpy as np
 
-from .Binning import Binning1D, Interval
+from .Binning import Binning1D, BinningND, Interval, NDMixin
+
+####################################################################################################
+
+class DataSetMoment:
+
+    ##############################################
+
+    def __init__(
+            self,
+            number_of_entries: int=0,
+            sum_x: float=0, sum_x2: float=0, sum_x3: float=0, sum_x4: float=0,
+    ) -> None:
+        self.number_of_entries = number_of_entries
+        self.sum_x = sum_x
+        self.sum_x2 = sum_x2
+        self.sum_x3 = sum_x3
+        self.sum_x4 = sum_x4 # unused
+
+    ##############################################
+
+    def clone(self) -> 'DataSetMoment':
+        return self.__class__(
+            self.number_of_entries,
+            self.sum_x, self.sum_x2, self.sum_x3, self.sum_x4,
+        )
+
+    ##############################################
+
+    def to_json(self) -> dict:
+        return {
+            'number_of_entries': self.number_of_entries,
+            'sum_x': self.sum_x,
+            'sum_x2': self.sum_x2,
+            'sum_x3': self.sum_x3,
+            'sum_x4': self.sum_x4,
+        }
+
+    ##############################################
+
+    @classmethod
+    def from_json(cls, data) -> 'DataSetMoment':
+        return cls(**data)
+
+    ##############################################
+
+    def fill(self, x: float) -> None:
+        self.number_of_entries += 1
+        self.sum_x += x
+        self.sum_x2 += x**2
+        self.sum_x3 += x**3
+        self.sum_x4 += x**4
+
+    ##############################################
+
+    def __iadd__(self, obj: 'DataSetMoment') -> 'DataSetMoment':
+        self.number_of_entries += obj.number_of_entries
+        self.sum_x += obj.sum_x
+        self.sum_x2 += obj.sum_x2
+        self.sum_x3 += obj.sum_x3
+        self.sum_x4 += obj.sum_x4
+        return self
+
+    ##############################################
+
+    @property
+    def mean(self) -> float:
+        return self.sum_x / self.number_of_entries
+
+    @property
+    def biased_variance(self) -> float:
+        return self.sum_x2 / self.number_of_entries - self.mean**2
+
+    @property
+    def unbiased_variance(self) -> float:
+        return self.number_of_entries / (self.number_of_entries -1) * self.biased_variance
+
+    @property
+    def biased_standard_deviation(self) -> float:
+        return math.sqrt(self.biased_variance)
+
+    @property
+    def standard_deviation(self) -> float:
+        return math.sqrt(self.unbiased_variance)
+
+    @property
+    def skew(self) -> float:
+        return ((self.sum_x3 / self.number_of_entries - 3*self.mean*self.biased_variance - self.mean**3)
+                / (self.biased_variance*self.biased_standard_deviation))
+
+    @property
+    def kurtosis(self) -> float:
+        # Need an expansion in terms of sum_x**i
+        return NotImplementedError
+
+####################################################################################################
+
+class DataSetMomentND(NDMixin):
+
+    ##############################################
+
+    def __init__(self, dimension: int) -> None:
+        NDMixin.__init__(self, [DataSetMoment() for i in range(dimension)])
+
+    ##############################################
+
+    def fill(self, *args) -> None:
+        pass
+        # Fixme:
+        # for data_set_moment, x in zip(self, args):
+        #     data_set_moment.fill(x)
+
+####################################################################################################
+
+class WeightedDataSetMoment:
+
+    ##############################################
+
+    def __init__(self) -> None:
+        self.sum_weight = 0
+        self.sum_weight2 = 0
+        self.sum_weight_x = 0
+        self.sum_weight_x2 = 0
+        self.sum_weight_x3 = 0
+        self.sum_weight_x4 = 0
+
+    ##############################################
+
+    def fill(self, x: float, weight: float=1.) -> None:
+        self.sum_weight += weight
+        self.sum_weight2 += weight**2
+        weight_x = weight * x
+        self.sum_weight_x += weight_x
+        self.sum_weight_x2 += weight_x**2
+        self.sum_weight_x3 += weight_x**3
+        self.sum_weight_x4 += weight_x**4
+
+    ##############################################
+
+    @property
+    def number_of_effective_entries(self) -> float:
+        return self.sum_weight**2 / self.sum_weight2
+
+    @property
+    def mean(self) -> float:
+        return self.sum_weight_x / self.number_of_effective_entries
 
 ####################################################################################################
 
@@ -37,26 +186,93 @@ class Histogram:
 
     ##############################################
 
-    def __init__(self, binning: Binning1D) -> None:
+    def __init__(self, binning: Binning1D, title: str='') -> None:
         if isinstance(binning, Binning1D):
             self._binning = binning
         else:
             raise ValueError
+        self._title = str(title)
+        self._make_array(self._binning.array_size)
+        self.data_set_moment = DataSetMoment()
+        self.clear_feature()
 
-        # init accumulators
-        array_size = self._binning.array_size
+    ##############################################
+
+    def _make_array(self, array_size: int) -> None:
         self._accumulator = np.zeros(array_size)
         self._sum_weight_square = np.zeros(array_size)
-        self._errors = np.zeros(array_size)
-
-        self._errors_are_dirty = True
 
     ##############################################
 
     def clone(self) -> 'Histogram':
-        # Fixme: binnning.clone()
-        histogram = self.__class__(self._binning)
+        histogram = self.__class__(self._binning.clone())
         histogram += self
+        return histogram
+
+    ##############################################
+
+    def to_json(self) -> dict:
+        return {
+            'title': self._title,
+            'binning': self._binning.to_json(),
+            'data_set_moment': self.data_set_moment.to_json(),
+            'accumulator': list(self._accumulator),
+            'sum_weight_square': list(self._sum_weight_square),
+        }
+
+    ##############################################
+
+    @classmethod
+    def from_json(cls, data: dict) -> 'Histogram':
+        binning = cls.from_json(data['binning'])
+        histogram = Histogram(binning, title=data['title'])
+        histogram.data_set_moment += DataSetMoment.from_json(data['data_set_moment'])
+        histogram._accumulator[...] = data['accumulator']
+        histogram._sum_weight_square[...] = data['sum_weight_square']
+        return histogram
+
+    ##############################################
+
+    def clear(self, value: float=.0) -> None:
+        self._accumulator[:] = value
+        self._sum_weight_square[:] = value**2
+        self.data_set_moment = DataSetMoment()
+        self.clear_feature()
+
+    ##############################################
+
+    def clear_feature(self) -> None:
+        self._errors = None
+        self._integral = None
+        self._mean = None
+        self._biased_variance = None
+
+    ##############################################
+
+    def rebin(self, factor: int=2) -> 'Histogram':
+        histogram = self.__class__(Binning1D(self._binning.interval, bin_width=self._binning.bin_width*factor))
+        binning = histogram.binning
+
+        # copy under/over flow bins
+        for i in (0, -1):
+            histogram._accumulator[i] = self._accumulator[i]
+            histogram._sum_weight_square[i] = self._sum_weight_square[i]
+
+        start = 1
+        for i in binning.bin_iterator():
+            stop = min(start + factor, self.binning.number_of_bins)
+            histogram._accumulator[i] = np.sum(self._accumulator[start:stop])
+            histogram._sum_weight_square[i] = np.sum(self._sum_weight_square[start:stop])
+            start = stop
+
+        # Fixme: merge last bin when the rebin factor is not a multiple
+        over_flow_bin = self.binning.over_flow_bin
+        if stop < over_flow_bin:
+            histogram._accumulator[i] += np.sum(self._accumulator[stop:over_flow_bin])
+            histogram._sum_weight_square[i] += np.sum(self._sum_weight_square[stop:over_flow_bin])
+
+        histogram.data_set_moment += self.data_set_moment
+
         return histogram
 
     ##############################################
@@ -67,6 +283,14 @@ class Histogram:
     ##############################################
 
     @property
+    def title(self) -> str:
+        return self._title
+
+    @title.setter
+    def title(self, value: str) -> None:
+        self._title = str(value)
+
+    @property
     def binning(self) -> Binning1D:
         return self._binning
 
@@ -74,16 +298,26 @@ class Histogram:
     def accumulator(self) -> np.ndarray:
         return self._accumulator
 
-    ##############################################
+    @property
+    def binning_accumulator(self):
+        return self._accumulator[1:-1]
 
-    def __iadd__(self, obj: 'Histogram') -> 'Histogram':
-        """Add a n histogram"""
-        if self.is_consistent_with(obj):
-            self._accumulator += obj._accumulator
-            self._sum_weight_square += obj._sum_weight_square
-        else:
-            raise ValueError
-        return self
+    @property
+    def x_values(self):
+        return self._binning.bin_centers
+
+    @property
+    def min(self):
+        # return min(self._accumulator) # - self._errors
+        return float(np.min(self._accumulator))
+
+    @property
+    def max(self):
+        # return max(self._accumulator) # + self._errors
+        return float(np.max(self._accumulator))
+
+    inf = min
+    sup = max
 
     ##############################################
 
@@ -92,26 +326,128 @@ class Histogram:
 
     ##############################################
 
-    def clear(self, value: float=.0) -> None:
-        self._accumulator[:] = value
-        self._sum_weight_square[:] = value**2
-        self._errors_are_dirty = True
+    # | float
+    def __iadd__(self, obj: 'Histogram') -> 'Histogram':
+        """Add an histogram"""
+        if isinstance(obj, Histogram):
+            if self.is_consistent_with(obj):
+                self._accumulator += obj._accumulator
+                self._sum_weight_square += obj._sum_weight_square
+                self.data_set_moment += obj.data_set_moment
+            else:
+                raise ValueError
+        else:
+            float_obj = float(obj)
+            self._accumulator += float_obj
+            self._sum_weight_square += float_obj**2
+            # self.data_set_moment += ...
+        self.clear_feature()
+        return self
 
     ##############################################
 
-    def fill(self, x: float, weight: float=1.) -> None:
+    def __isub__(self, obj: 'Histogram') -> 'Histogram':
+        if isinstance(obj, Histogram):
+            if self.is_consistent_with(obj):
+                self._accumulator -= obj._accumulator
+                self._sum_weight_square -= obj._sum_weight_square
+                self.data_set_moment -= obj.data_set_moment
+            else:
+                raise ValueError
+        else:
+            float_obj = float(obj)
+            self._accumulator -= float_obj
+            self._sum_weight_square -= float_obj**2
+            # self.data_set_moment -= ...
+        self.clear_feature()
+        return self
+
+    ##############################################
+
+    def __imul__(self, obj: 'Histogram') -> 'Histogram':
+        # Fixme: data_set_moment
+        if isinstance(obj, Histogram):
+            if self.is_consistent_with(obj):
+                self._accumulator *= obj._accumulator
+                self._sum_weight_square[...] = 0
+                # self._sum_weight_square *= obj._sum_weight_square
+                # self.data_set_moment *= obj.data_set_moment # Fixme: Right ???
+            else:
+                raise ValueError
+        else:
+            float_obj = float(obj)
+            self._accumulator *= float_obj
+            self._sum_weight_square *= float_obj**2
+            # self.data_set_moment *= float_obj
+        self.clear_feature()
+        return self
+
+    ##############################################
+
+    def __idiv__(self, obj: 'Histogram') -> 'Histogram':
+        # Fixme: data_set_moment
+        if isinstance(obj, Histogram):
+            if self.is_consistent_with(obj):
+                numerator = self._accumulator
+                denominator = obj._accumulator
+                efficiency = np.nan_to_num(numerator / denominator)
+                self._accumulator = efficiency
+                self._sum_weight_square[...] = self._binomial_variance_unweighted(efficiency, denominator)
+                # self.data_set_moment /= obj.data_set_moment # Fixme: Right ???
+            else:
+                raise ValueError
+        else:
+            float_obj = float(obj)
+            self._accumulator /= float_obj
+            self._sum_weight_square /= float_obj**2
+            # self.data_set_moment /= float_obj
+        self.clear_feature()
+        return self
+
+    ##############################################
+
+    def __add__(obj1, obj2: 'Histogram') -> 'Histogram':
+        obj = obj1.clone()
+        obj += obj2
+        return obj
+
+    ##############################################
+
+    def __sub__(obj1, obj2: 'Histogram') -> 'Histogram':
+        obj = obj1.clone()
+        obj -= obj2
+        return obj
+
+    ##############################################
+
+    def __mul__(obj1, obj2: 'Histogram') -> 'Histogram':
+        obj = obj1.clone()
+        obj *= obj2
+        return obj
+
+    ##############################################
+
+    def __div__(obj1, obj2: 'Histogram') -> 'Histogram':
+        obj = obj1.clone()
+        obj /= obj2
+        return obj
+
+    ##############################################
+
+    def fill(self, *values: list[float], weight: float=1.) -> None:
         if weight < 0:
             raise ValueError
-        i = self._binning.find_bin(x)
+        i = self._binning.find_bin(*values)
         self._accumulator[i] += weight
         # if weight == 1.: weight_square = 1.
         self._sum_weight_square[i] += weight**2
-        self._errors_are_dirty = True
+        self.data_set_moment.fill(*values)
+        self.clear_feature()
 
     ##############################################
 
     def compute_errors(self) -> None:
-        if self._errors_are_dirty:
+        if self._errors is None:
             self._errors = np.sqrt(self._sum_weight_square)
 
     ##############################################
@@ -122,27 +458,147 @@ class Histogram:
 
     ##############################################
 
-    def integral(self, interval=None, interval_x=None):
-        return self._accumulator.sum()
-        # Fixme: purpose ?
-        # if interval is None and interval_x is None:
-        #     return self._accumulator.sum()
-        # else:
-        #     if interval_x is not None:
-        #         start = self.binning.find_bin(interval_x.inf)
-        #         stop = self.binning.find_bin(interval_x.sup)
-        #     else:
-        #         start = interval.inf
-        #         stop = interval.sup
-        #     return self._accumulator[start:stop +1].sum(), Interval(start, stop)
+    @property
+    def integral(self) -> float:
+        if self._integral is None:
+            self._integral = self._accumulator.sum()
+        return self._integral
 
     ##############################################
 
-    def normalise(self, scale: float=1) -> None:
-        self._accumulator /= self.integral()
-        self._errors_are_dirty = True
-        if scale != 1:
-            self._accumulator *= scale
+    @property
+    def number_of_effective_entries(self) -> float:
+        return self.integral**2 / self._sum_weight_square.sum()
+
+    ##############################################
+
+    @property
+    def mean(self) -> float:
+        if self._mean is None:
+            # if weighted: / self.number_of_effective_entries
+            self._mean = np.sum(self.binning_accumulator * self.x_values) / self.integral
+        return self._mean
+
+    ##############################################
+
+    @property
+    def biased_variance(self) -> float:
+        if self._biased_variance is None:
+            self._biased_variance = np.sum(self.binning_accumulator * self.x_values**2) / self.integral - self.mean**2
+        return self._biased_variance
+
+    ##############################################
+
+    @property
+    def unbiased_variance(self) -> float:
+        return self.integral / (self.integral -1) * self.biased_variance
+
+    ##############################################
+
+    @property
+    def biased_standard_deviation(self) -> float:
+        return math.sqrt(self.biased_variance)
+
+    ##############################################
+
+    @property
+    def standard_deviation(self) -> float:
+        return math.sqrt(self.unbiased_variance)
+
+    ##############################################
+
+    @property
+    def skew(self) -> float:
+        # self.biased_variance * self.biased_standard_deviation
+        return (np.sum(self.binning_accumulator * (self.x_values - self.mean)**3)
+                / (self.biased_standard_deviation**3 * self.integral))
+
+    ##############################################
+
+    @property
+    def kurtosis(self) -> float:
+        return (np.sum(self.binning_accumulator * (self.x_values - self.mean)**4)
+                / (self.biased_variance**2 * self.integral)
+                -3)
+
+    ##############################################
+
+    def normalise(self, scale: float=1) -> 'Histogram':
+        histogram = self.clone()
+        histogram /= histogram.integral
+        # if scale != 1:
+        #     self._accumulator *= scale
+        histogram.clear_feature()
+        return histogram
+
+    ##############################################
+
+    def cumulative(self, normalise: bool=True) -> 'Histogram':
+        histogram = self.clone()
+        histogram.clear_feature()
+        histogram._accumulator = np.cumsum(histogram._accumulator)   # overflow ?
+        histogram._sum_weight_square = np.cumsum(histogram._sum_weight_square)
+        if normalise:
+            histogram.normalise()
+        return histogram
+
+    ##############################################
+
+    def inverse_cumulative(self, normalise: bool=True) -> 'Histogram':
+        histogram = self.clone()
+        denominator = histogram.integral
+        if normalise:
+            histogram._accumulator /= denominator
+            sup = 1
+        else:
+            sup = histogram.integral
+        inverse_cumulative = sup - np.cumsum(histogram._accumulator)   # overflow ?
+        histogram._accumulator[1] = sup
+        histogram._accumulator[2:-1] = inverse_cumulative[1:-2]
+        # Fixme: check, should be computed in div
+        histogram._sum_weight_square[...] = self._binomial_variance_unweighted(histogram._accumulator, denominator)
+        histogram.clear_feature()
+        return histogram
+
+    ##############################################
+
+    def efficiency(self):
+        # eff = Sum x>t / integral
+        return self.inverse_cumulative()
+
+    ##############################################
+
+    def purity(self, denominator):
+        # eff = Sum N x>t / Sum D x>t
+        numerator = self.inverse_cumulative(normalise=False)
+        denominator = denominator.inverse_cumulative(normalise=False)
+        purity = numerator / denominator
+        return purity
+
+
+   ###############################################
+
+    def find_non_zero_bin_range(self) -> Interval:
+        inf = 0
+        while self._accumulator[inf] == 0:
+            inf += 1
+        sup = len(self._accumulator) -1
+        while self._accumulator[sup] == 0:
+            sup -= 1
+        return Interval(inf, sup)
+
+   ###############################################
+
+    def non_zero_bin_range_histogram(self) -> 'Histogram':
+        bin_range = self.find_non_zero_bin_range()
+        binning = self._binning.sub_binning(self._binning.sub_interval(bin_range))
+        histogram = self.__class__(binning)
+        src_slice = slice(bin_range.inf, bin_range.sup +1)
+        dst_slice = slice(binning.first_bin, binning.over_flow_bin)
+        histogram._accumulator[dst_slice] = self._accumulator[src_slice]
+        histogram._sum_weight_square[dst_slice] = self._sum_weight_square[src_slice]
+        histogram._errors[dst_slice] = self._errors[src_slice]
+        return histogram
 
     ##############################################
 
@@ -177,7 +633,7 @@ class Histogram:
     def __str__(self):
         binning = self._binning
         text = f"""
-Histogram 1D
+Histogram 1D {self.title}
   interval: {binning._interval}
   number of bins: {binning._number_of_bins}
   bin width: {binning._bin_width:g}
@@ -201,7 +657,7 @@ class EnumHistogram(Histogram):
 
     ##############################################
 
-    def __init__(self, cls) -> None:
+    def __init__(self, cls, title: str='') -> None:
         # Fixme: private API
         self._map = cls._value2member_map_
         self._labels = [str(_).split('.')[1] for _ in cls]
@@ -209,7 +665,7 @@ class EnumHistogram(Histogram):
         inf = min(values)
         sup = max(values) +1
         binning = Binning1D(Interval(inf, sup), bin_width=1)
-        super().__init__(binning)
+        super().__init__(binning, title=title)
 
     ##############################################
 
@@ -221,7 +677,7 @@ class EnumHistogram(Histogram):
 
     def fill(self, x, weight: float=1.) -> None:
         if x is not None:
-            super().fill(x.value, weight)
+            super().fill(x.value, weight=weight)
 
     ##############################################
 
@@ -246,3 +702,23 @@ class EnumHistogram(Histogram):
         x = np.arange(binning.number_of_bins)
 
         return x, y, y_errors
+
+####################################################################################################
+
+class Histogram2D(Histogram):
+
+    ##############################################
+
+    def __init__(self, binning: BinningND) -> None:
+        if isinstance(binning, BinningND) and binning.dimension == 2:
+            self._binning = binning
+        else:
+            raise ValueError
+
+        array_size = [binning.array_size for binning in self._binning]
+        self._make_array(array_size)
+        self.data_set_moment = DataSetMomentND(dimension=2)
+
+        # self.clear_feature()
+
+

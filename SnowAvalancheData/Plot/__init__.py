@@ -52,30 +52,60 @@ class Figure:
 
     ##############################################
 
-    def plot_bar(self, histogram: EnumHistogram, title: str, axe: list=None) -> None:
+    def plot_bar(self, histogram: EnumHistogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
         indexes, y, y_errors = histogram.to_graph()
-        ax.bar(indexes, y, width=.3, yerr=y_errors, label=title)
+        ax.bar(indexes, y, width=.3, yerr=y_errors, label=title or histogram.title)
         ax.set_title(title)
         ax.set_xticks(indexes, labels=histogram.labels)
         ax.grid(True)
 
     ##############################################
 
-    def plot_histogram(self, histogram: Histogram, title: str, axe: list=None) -> None:
+    def plot_histogram(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
         x, y, x_errors, y_errors = histogram.to_graph()
         ax.errorbar(x, y, y_errors, fmt='o', linewidth=2, capsize=6)
-        ax.set_title(title)
+        ax.set_title(title or histogram.title)
         # ax.set_xticks(indexes, labels=histogram.labels)
         ax.grid(True)
 
     ##############################################
 
-    def plot_bar_number(self, histogram: Histogram, title: str, axe: list=None) -> None:
+    def plot_bar_number(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
         x, y, x_errors, y_errors = histogram.to_graph(centred=False)
         ax.bar(x, y, width=.3, yerr=y_errors, label=title)
-        ax.set_title(title)
+        ax.set_title(title or histogram.title)
         ax.grid(True)
 
+    ##############################################
+
+    def box_plot(self, histogram: Histogram, title: str, axe: list=None) -> None:
+        """Also called Hinton diagram"""
+
+        # Return the current axes, creating one if necessary
+        # axes = axes if axes is not None else plt.gca()
+
+        # if np.min(self._accumulator) < 0:
+        #     raise ValueError("Bin contents must be positive")
+
+        # # Set bin content to a normalised square area
+        # accumulator_view = self._accumulator[1:-1,1:-1]
+        # accumulator = np.sqrt(accumulator_view / np.max(accumulator_view))
+        # # Add margin
+        # accumulator *= .90
+
+        # for (x, y), size in np.ndenumerate(accumulator):
+        #     rect = plt.Rectangle([x - size / 2, y - size / 2], size, size,
+        #                          edgecolor='black', facecolor='white')
+        #     axes.add_patch(rect)
+
+        # axes.set_aspect('equal', 'box')
+        # x_size, y_size = accumulator_view.shape
+        # axes.set_xlim(-.5, x_size)
+        # axes.set_ylim(-.5, y_size)
+        # labels = [str(x) for x in self._binning.x.bin_centers]
+        # plt.xticks(np.arange(x_size) +.5, labels, rotation='vertical')
+        # labels = [str(x) for x in self._binning.y.bin_centers]
+        # plt.yticks(np.arange(y_size) +.5, labels)

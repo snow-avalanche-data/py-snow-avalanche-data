@@ -31,6 +31,7 @@ from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Bin
 ####################################################################################################
 
 path = Path('data').joinpath('anena-accidents.json')
+print('Load {path}')
 accidents = Accidents.load_json(path)
 
 filtered_accidents = accidents.and_filter(
@@ -51,17 +52,21 @@ attribute_title = {
     'move_direction': 'Moving Direction',
 }
 
+print('Create histograms')
 histograms = {}
 for attribute, type_ in Accident.ATTRIBUTE_TYPES.items():
+    title = attribute_title.get(attribute, attribute)
     if issubclass(type_, Enum):
-        histograms[attribute] = EnumHistogram(type_)
+        histograms[attribute] = EnumHistogram(type_, title=title)
     elif type_ in (int, float):
+        print(f'  Scan inf/sup for {attribute}')
         inf, sup = filtered_accidents.inf_sup(attribute)
         sup += 1
         bin_width = attribute_bin_width.get(attribute, 1)
         print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
-        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width))
+        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title)
 
+print('Fill histograms')
 for accident in filtered_accidents:
     # pprint(accident.__dict__)
     for attribute, histogram in histograms.items():
@@ -76,6 +81,8 @@ for accident in filtered_accidents:
 
 ####################################################################################################
 
+print('Plot...')
+
 # histogram = histograms['bra_level']
 # print(histogram)
 # print(histogram.to_graph())
@@ -85,15 +92,14 @@ import matplotlib.pyplot as plt
 
 def plot_histogram(figure, attribute):
     histogram = histograms[attribute]
-    title = attribute_title.get(attribute, attribute)
     if attribute == 'bra_level':
-        figure.plot_bar_number(histogram, title=title)
+        figure.plot_bar_number(histogram)
     else:
         match histogram:
            case EnumHistogram():
-               figure.plot_bar(histogram, title=title)
+               figure.plot_bar(histogram)
            case Histogram():
-               figure.plot_histogram(histogram, title=title)
+               figure.plot_histogram(histogram)
 
 figure1 = Figure(number_of_rows=2, number_of_columns=3)
 for attribute in (
