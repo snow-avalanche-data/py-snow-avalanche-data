@@ -25,7 +25,7 @@
 from pathlib import Path
 from pprint import pprint
 
-from SnowAvalancheData.Anena import AccidentBook, Accidents, Accident
+from SnowAvalancheData.Import.Anena import AccidentBook, Accidents, Accident
 
 ####################################################################################################
 
