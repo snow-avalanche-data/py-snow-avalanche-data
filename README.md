@@ -14,34 +14,31 @@ License](https://www.gnu.org/licenses/agpl-3.0.en.html).
 This repository contains also some French snow avalanche accident data stored in
 [JSON](https://www.json.org/json-en.html).
 
-**Dependencies**
-* [Numpy](https://numpy.org) — a fundamental package for scientific computing.
-* [Matplotlib](https://matplotlib.org) — a comprehensive library for creating static, animated, and interactive visualizations.
-  Matplotlib is used to generate publication quality figures.
-* [xlrd](https://github.com/python-excel/xlrd) — a library for reading data from Excel files in the historical .xls format.
-  [doc](https://xlrd.readthedocs.io/en/latest)
-  see also https://www.python-excel.org and [openpyxl](https://openpyxl.readthedocs.io/en/stable)
-* [requests](https://docs.python-requests.org/en/latest) — a simple HTTP library
+# TODO List
+
+* look at https://pydantic-docs.helpmanual.io
+* merge c2c client code
 
 # Origin of the data
+
+There are several sources of data available on the web.
+
+## ANENA
 
 Data are gathered from the [ANENA survey](https://www.anena.org/5041-bilan-des-accidents.htm)
 (Association Nationale pour l’Étude de la Neige et des Avalanches) which register snow avalanche
 accidents on the French territory from official authorities, usually these accidents triggered a
 rescue operation and forensic report.
 
-There are other data sources available on the web.
-
 ## SERAC
 
 [SERAC](https://www.camptocamp.org/serac) is an accident database managed by the C2C association.
 
-* https://www.camptocamp.org/articles/697210/fr/base-serac-de-recits-d-incidents-et-accidents
-* https://www.camptocamp.org/articles/106728/fr/licences-des-contenus
+* [SERAC reports](https://www.camptocamp.org/xreports)
+* [Notes on SERAC](https://www.camptocamp.org/articles/697210/fr/base-serac-de-recits-d-incidents-et-accidents]
+* [Licenses](https://www.camptocamp.org/articles/106728/fr/licences-des-contenus)
 
-* [SERAC (avalanche,person fall) reports](https://www.camptocamp.org/xreports?xtyp=avalanche,person_fall)
-
-**API usage**
+**How to use the API**
 ```
 # List reports
 curl 'https://api.camptocamp.org/xreports?xtyp=avalanche,person_fall'
@@ -62,6 +59,7 @@ http://www.data-avalanche.org is a snow avalanche database managed by the releva
 
 ## Fondation Petzl
 
+**Reports**
 * [Fondation Patzl — Mieux connaître l’accidentologie des sports de montagne](https://www.petzl.com/fondation/s/accidentologie-des-sports-de-montagne?language=fr)
 
 * for the period 2018-2021
@@ -75,7 +73,9 @@ http://www.data-avalanche.org is a snow avalanche database managed by the releva
 * [Maud Vanpoulle](http://l-vis.univ-lyon1.fr/staff/maud-vanpoulle)
   [Laboratoire sur les Vulnérabilités et l’Innovation dans le Sport (L-VIS, Université de Lyon 1)](http://l-vis.univ-lyon1.fr)
 
-# Bias on these data
+# Data Analysis
+
+## Bias on these data
 
 Since we only have high quality data from judicial reports, data cover only accidents that required
 a rescue operation.  Thus, we have a lack of data on snow avalanches that didn't have serious
@@ -86,6 +86,30 @@ of the activities.  We don't have data when and where people practice their acti
 principle, we should correct data for such biases when we want to evaluate a risk.  For example, the
 frequency of the avalanches in function of the slope orientation could be biased by a non-uniform
 frequency of presence.
+
+# Note on the code
+
+## Features
+
+The source code features
+
+* a module to implement an JSON format for accident
+* a module to perform introspection on JSON DATA and generate a schema
+* a module to import ANENA xls files
+* a module to implement a client to connect to the C2C API
+* a module to work with SERAC data
+* a module to perform statistical analyses
+* a module to generate plots
+
+## Software Dependencies
+
+* [Numpy](https://numpy.org) — a fundamental package for scientific computing.
+* [Matplotlib](https://matplotlib.org) — a comprehensive library for creating static, animated, and interactive visualizations.
+  Matplotlib is used to generate publication quality figures.
+* [xlrd](https://github.com/python-excel/xlrd) — a library for reading data from Excel files in the historical .xls format.
+  [doc](https://xlrd.readthedocs.io/en/latest)
+  see also https://www.python-excel.org and [openpyxl](https://openpyxl.readthedocs.io/en/stable)
+* [requests](https://docs.python-requests.org/en/latest) — a simple HTTP library
 
 # About Authors
 
