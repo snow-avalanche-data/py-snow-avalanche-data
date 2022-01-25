@@ -268,35 +268,12 @@ class SeracDocument:
 
     ##############################################
 
-    # anonymous
-    # areas
-    # associations
-    # author
-    # available_langs
-    # cooked
-    # disable_comments
-    # locales
-    # protected
-    # quality
-    # type
-    # version
-
     @property
     def avalanche_level(self) -> str:
-        # level_1
-        # level_2
-        # level_3
-        # level_4
-        # level_na
         return self.xpath('avalanche_level')
 
     @property
     def avalanche_slope(self) -> str:
-        # slope_30_35
-        # slope_35_40
-        # slope_40_45
-        # slope_gt_45
-        # slope_lt_30
         return self.xpath('avalanche_slope')
 
     @property
@@ -313,24 +290,10 @@ class SeracDocument:
 
     @property
     def event_activity(self) -> str:
-        # alpine_climbing
-        # ice_climbing
-        # multipitch_climbing
-        # other
-        # skitouring
-        # snow_ice_mixed
-        # sport_climbing
         return self.xpath('event_activity')
 
     @property
     def event_type(self) -> str:
-        # avalanche
-        # crevasse_fall
-        # other
-        # person_fall
-        # safety_operation
-        # stone_ice_fall
-        # weather_event
         return self.xpath('event_type')
 
     @property
@@ -343,7 +306,6 @@ class SeracDocument:
 
     @property
     def rescue(self) -> bool:
-        # None False True
         _ = self.xpath('rescue')
         # Fimxe: ok???
         if _ is None:
@@ -352,12 +314,6 @@ class SeracDocument:
 
     @property
     def severity(self) -> str:
-        # 1d_to_3d
-        # 1m_to_3m
-        # 4d_to_1m
-        # more_than_3m
-        # None
-        # severity_no
         return self.xpath('severity')
 
     @property
