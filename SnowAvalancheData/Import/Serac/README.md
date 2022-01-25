@@ -14,3 +14,11 @@ See https://www.camptocamp.org/articles/697210/fr/base-serac-de-recits-d-inciden
 chercheurs.  Ces informations personnelles sont : fréquence de pratique de l'activité, nombre de
 sorties réalisées dans l'année, autonomie dans l'activité, âge au moment de l’événement, sexe,
 nombre de blessures antérieures. »
+
+# JSON Schema
+
+See https://github.com/c2corg/v6_api and the tool `SnowAvalancheData.Json.JsonSchema` to dump a JSON
+schema from a pool of JSON objects.
+
+* https://github.com/c2corg/v6_api/tree/master/c2corg_api/models
+* https://github.com/c2corg/v6_api/blob/master/c2corg_api/models/xreport.py

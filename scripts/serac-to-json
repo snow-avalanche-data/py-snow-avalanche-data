@@ -38,4 +38,4 @@ if False:
     serac.write_json(json_path)
 
 serac.load_from_json(json_path)
-serac.scan()
+serac.inspect()

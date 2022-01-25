@@ -31,6 +31,10 @@ import requests
 
 ####################################################################################################
 
+from SnowAvalancheData.Json.JsonSchema import JsonSchemaInspector
+
+####################################################################################################
+
 class CamptocampAPI:
 
     API_URL = 'https://api.camptocamp.org'
@@ -410,36 +414,7 @@ class SeracQuery:
 
     ##############################################
 
-    def scan(self) -> None:
-        keys = set()
-        for document in self:
-            keys |= {key for key in document.json.keys()}
-        key_values = {key: set() for key in keys}
-
-        for document in self:
-            for key, value in document.json.items():
-                match value:
-                    case int() | float() | str():
-                        key_values[key].add(value)
-                    case dict():
-                        key_values[key] |= {_ for _ in value.keys()}
-                    case list():
-                        if value:
-                            match value[0]:
-                                case str():
-                                    key_values[key] |= {_ for _ in value}
-                                case dict():
-                                    for lvalue in value:
-                                        key_values[key] |= {_ for _ in lvalue.keys()}
-
-        for key, values in key_values.items():
-            if values:
-                if key in ('date',):
-                    dates = sorted(values)
-                    key_values[key] = (dates[0], dates[-1])
-                else:
-                    if isinstance(list(values)[0], (int, float)):
-                        key_values[key] = (min(values), max(values))
-
-        print('Keys:')
-        pprint(key_values)
+    def inspect(self) -> None:
+        inspector = JsonSchemaInspector()
+        json_objects = [_.json for _ in self]
+        inspector.inspect(json_objects)
