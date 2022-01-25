@@ -48,11 +48,13 @@ class Figure:
             dpi=100,
             figsize=[self.mm2in(_) for _ in self.A5],
             constrained_layout=True,
+            # projection='polar',
             # layout='constrained',
             # constrained_layout_pads=0.1,
         )
         # self._figure.tight_layout(pad=3.0, w_pad=3.0, h_pad=3.0)
 
+        self._number_of_rows = number_of_rows
         self._number_of_columns = number_of_columns
         self._location = -1
         for _ in self._axes.flat:
@@ -73,7 +75,12 @@ class Figure:
 
     ##############################################
 
-    def plot_bar(self, histogram: EnumHistogram, title: str=None, axe: list=None) -> None:
+    def _r_c(self) -> tuple[int, int]:
+        return int(self._location // self._number_of_columns), int(self._location % self._number_of_columns)
+
+    ##############################################
+
+    def bar(self, histogram: EnumHistogram, title: str=None, axe: list=None) -> None:
         labels = []
         has_long_label = False
         for label in histogram.labels:
@@ -84,8 +91,8 @@ class Figure:
 
         ax = self._get_axe(axe)
         indexes, y, y_errors = histogram.to_graph()
-        ax.bar(indexes, y, width=.3, yerr=y_errors, label=title or histogram.title)
-        ax.set_title(title)
+        ax.bar(indexes, y, width=.3, yerr=y_errors)   # , label=title
+        ax.set_title(title or histogram.title)
         ax.set_xticks(indexes, labels=labels)
         ax.grid(True)
         if has_long_label:
@@ -94,7 +101,7 @@ class Figure:
 
     ##############################################
 
-    def plot_histogram(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
+    def histogram(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
         x, y, x_errors, y_errors, edges = histogram.to_graph(non_null=False)
         ax.stairs(y, edges, fill=True)
@@ -107,11 +114,28 @@ class Figure:
 
     ##############################################
 
-    def plot_bar_number(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
+    def bar_number(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
         x, y, x_errors, y_errors = histogram.to_graph(centred=False)
-        ax.bar(x, y, width=.3, yerr=y_errors, label=title)
+        ax.bar(x, y, width=.3, yerr=y_errors)
         ax.set_title(title or histogram.title)
+        ax.set_xticks(x, labels=[str(int(_)) for _ in x])
+        ax.grid(True)
+
+    ##############################################
+
+    def polar_bar(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
+        indexes, y, y_errors = histogram.to_graph()
+        ax = self._get_axe(axe)
+        ax.remove()
+        ax = self._figure.add_subplot(self._number_of_rows, self._number_of_columns, self._location +1, projection='polar')
+        # theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
+        theta = np.array([90, 45, 0, 315, 271, 225, 181, 135]) * 2*np.pi / 360
+        ax.bar(theta, y + y_errors, width=(np.pi/4 * .90), color='tab:blue', alpha=.8)
+        ax.bar(theta, y, width=(np.pi/4 * .90), color='tab:blue', alpha=1.0)
+        ax.bar(theta, y - y_errors, width=(np.pi/4 * .90), color='white', alpha=.8)
+        ax.set_title(title or histogram.title)
+        ax.set_xticks(theta, labels=histogram.labels)
         ax.grid(True)
 
     ##############################################

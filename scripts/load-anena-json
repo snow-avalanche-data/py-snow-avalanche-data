@@ -102,14 +102,17 @@ import matplotlib.pyplot as plt
 
 def plot_histogram(figure, attribute):
     histogram = histograms[attribute]
-    if attribute == 'bra_level':
-        figure.plot_bar_number(histogram)
-    else:
-        match histogram:
-           case EnumHistogram():
-               figure.plot_bar(histogram)
-           case Histogram():
-               figure.plot_histogram(histogram)
+    match attribute:
+        case 'bra_level':
+            figure.bar_number(histogram)
+        case 'orientation':
+            figure.polar_bar(histogram)
+        case _:
+            match histogram:
+               case EnumHistogram():
+                   figure.bar(histogram)
+               case Histogram():
+                   figure.histogram(histogram)
 
 figure1 = Figure(number_of_rows=2, number_of_columns=3)
 for attribute in (
