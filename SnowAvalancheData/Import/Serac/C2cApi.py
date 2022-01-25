@@ -42,6 +42,8 @@ class ClientLogin:
 
 class LoginData:
 
+    # Fixme: pydantic
+
     ##############################################
 
     def __init__(self, json):
@@ -100,6 +102,8 @@ class LoginData:
 ####################################################################################################
 
 class SearchSettings:
+
+    # Fixme: data class
 
     ##############################################
 
@@ -233,6 +237,7 @@ class SearchSettings:
 
     @property
     def type_letters(self):
+        # Fixme: simplify
         letters = []
         if self._area:
             letters.append('a')
@@ -474,6 +479,10 @@ class Client:
         url = self._make_url('waypoints', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
+
+    ##############################################
+
+    # Fixme: implement list
 
     ##############################################
 

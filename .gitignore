@@ -3,3 +3,21 @@ __pycache__
 
 du.log
 .~lock.*
+
+secret
+
+data/c2c-schema.json
+data/serac-full.json
+
+SnowAvalancheData/Import/Serac/c2c-api-client
+SnowAvalancheData/Import/Serac/serac-document-example.json
+__anena__.md
+__tmp__.py
+documentation/
+github-organisation.md
+html/
+pdf/
+ressources/
+
+# !!!
+data/anena-accidents.json

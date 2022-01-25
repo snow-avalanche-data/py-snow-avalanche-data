@@ -1,0 +1,81 @@
+#! /usr/bin/env python3
+
+####################################################################################################
+
+####################################################################################################
+#
+# SnowAvalancheData - 
+# Copyright (C) 2021 Fabrice Salvaire
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+####################################################################################################
+
+from pathlib import Path
+from pprint import pprint
+import json
+
+from SnowAvalancheData.Import.Serac.C2cApi import Client, ClientLogin, SearchSettings
+
+####################################################################################################
+
+import logging
+
+# FORMAT = '%(asctime)s - %(name)s - %(module)s.%(levelname)s - %(message)s'
+FORMAT = '\033[1;32m%(asctime)s\033[0m - \033[1;34m%(name)s.%(funcName)s\033[0m - \033[1;31m%(levelname)s\033[0m - %(message)s'
+logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+
+####################################################################################################
+
+path = Path('secret').joinpath('c2c-login.json')
+with open(path, 'r') as fh:
+    login_data = json.load(fh)
+
+client_login = ClientLogin(**login_data)
+client = Client(client_login=client_login)
+
+####################################################################################################
+
+print('-'*100)
+pprint(client.user_profile())
+
+json = client.search('sonia calanque', SearchSettings(route=True))
+documents = json['routes']['documents']
+for document in documents:
+    print('-'*100)
+    pprint(document)
+    # pprint(document['locales'][0]['title'])
+    # pprint(document['document_id'])
+
+document = client.route(570170)
+print('-'*100)
+pprint(document)
+
+####################################################################################################
+#
+# Update Test
+#
+
+# https://www.camptocamp.org/waypoints/838941/fr/mont-pourri-fs7
+# https://www.camptocamp.org/waypoints/838934/fr/test-c2c-api-fs-waypoint-17
+
+# waypoint = client.waypoint(838941)
+# print('document_id', waypoint['document_id'])
+# print(waypoint)
+
+# version = waypoint['locales'][0]['version']
+# waypoint['locales'][0]['summary'] = 'update v{}'.format(version + 1)
+# print(waypoint)
+
+# client.update(message='update test', document=waypoint)
