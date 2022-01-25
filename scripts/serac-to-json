@@ -31,11 +31,11 @@ from SnowAvalancheData.Import.Serac import SeracQuery
 
 serac = SeracQuery()
 
-json_path = Path('data').joinpath('serac.json')
+json_path = Path('data').joinpath('serac-full.json')
 if False:
-    serac.load_from_api(xtype=('avalanche', 'person_fall'))
+    # xtyp=('avalanche', 'person_fall')
+    serac.load_from_api()
     serac.write_json(json_path)
 
 serac.load_from_json(json_path)
-for document in serac:
-    print(document.coordinate)
+serac.scan()

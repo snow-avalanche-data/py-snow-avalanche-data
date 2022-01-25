@@ -93,6 +93,158 @@ class CamptocampAPI:
 
 ####################################################################################################
 
+class SeracDocumentSchema:
+    # attribute = set   means value is in set
+    anonymous = bool
+    areas = dict
+    associations = {
+        'articles': None,
+        'images': None,
+        'outings': None,
+        'routes': None,
+        'users': None,
+        'waypoints': None,
+    }
+    author = {
+        'user_id': int,
+        'name': str,
+    }
+    available_langs = ['en', 'fr', 'it']
+    avalanche_level = {
+        'level_na',
+        'level_1',
+        'level_2',
+        'level_3',
+        'level_4',
+        'level_5',
+    }
+    avalanche_slope = {
+        'slope_lt_30',
+        'slope_30_35',
+        'slope_35_40',
+        'slope_40_45',
+        'slope_gt_45',
+    }
+    date = datetime
+    disable_comments = bool
+    document_id = int
+    elevation = int
+    event_activity = {
+        'alpine_climbing',
+        'ice_climbing',
+        'multipitch_climbing',
+        'other',
+        'skitouring',
+        'snow_ice_mixed',
+        'sport_climbing',
+    }
+    event_type = {
+        'avalanche',
+        'blocked_person',
+        'crevasse_fall',
+        'critical_situation',
+        'ice_cornice_collapse',
+        'injury_without_fall',
+        'other',
+        'person_fall',
+        'physical_failure',
+        'safety_operation',
+        'stone_ice_fall',
+        'weather_event',
+    }
+    geometry = {
+        'geom': str,
+        'geom_detail': None,
+        'version': int,
+    }
+    locales = [
+        {
+            'title': str,
+            'topic_id': int,
+            'lang': str,    # language set
+
+            'conditions': str,
+            'description': str,
+            'group_management': str,
+            'increase_impact': str,
+            'modifications': str,
+            'motivations': str,
+            'other_comments': str,
+            'place': str,
+            'reduce_impact': str,
+            'risk': str,
+            'route_study': str,
+            'safety': str,
+            'summary': str,
+            'time_management': str,
+            'training': str,
+
+            'version': int,
+        },
+    ]
+    nb_impacted = int
+    nb_participants = int
+    protected = bool
+    quality = {
+        'empty',
+        'draft',
+        'medium',
+        'fine',
+        'great',
+    }
+    rescue = bool   # or None (Pas d'information)
+    severity = {
+        'severity_no',
+        '1d_to_3d',
+        '4d_to_1m',
+        '1m_to_3m',
+        'more_than_3m',
+    }
+    type = {'x'}
+    version = int
+
+    # Private attributes
+
+    # age = int
+    # gender = {'male', 'female'}
+    # Implication dans la situation
+    # _ = {
+    #     'external_witness',
+    #     'internal_witness',
+    #     'primary_impacted',
+    #     'secondary_impacted',
+    # }
+    # Niveau de pratique
+    # _ = {
+    #     'non_autonomous',
+    #     'autonomous',
+    #     'expert',
+    # }
+    # Fréquence de pratique dans l'activité
+    # _ = {
+    #     'activity_rate_y5',
+    #     'activity_rate_m2',
+    #     'activity_rate_w1',
+    # }
+    # Encadrement
+    # _ = {
+    #     'no_supervision',
+    #     'federal_supervision',
+    #     'professional_supervision',
+    # }
+    # Diplôme d'encadrement pour l'activité
+    # _ = {
+    #     'federal_supervisor',
+    #     'professional_diploma',
+    # }
+    # Blessures antérieures
+    # _ = {
+    #     'no',
+    #     'previous_injuries_2',
+    # }
+
+####################################################################################################
+
 class SeracDocument:
 
     ##############################################
@@ -115,6 +267,19 @@ class SeracDocument:
         return data
 
     ##############################################
+
+    # anonymous
+    # areas
+    # associations
+    # author
+    # available_langs
+    # cooked
+    # disable_comments
+    # locales
+    # protected
+    # quality
+    # type
+    # version
 
     @property
     def avalanche_level(self) -> str:
@@ -211,9 +376,6 @@ class SeracQuery:
     # Fixme: name
     API_URL = 'xreports'
 
-    # xtype: avalanche, person_fall
-    # act: skitouring
-
     ##############################################
 
     def __init__(self) -> None:
@@ -233,8 +395,21 @@ class SeracQuery:
     def load_from_api(self, **kwargs) -> None:
         self._api = CamptocampAPI()
         payload = {}
-        if 'xtype' in kwargs:
-            payload['xtyp'] = ','.join(kwargs['xtype'])
+        for key in ('xtype', 'act'):
+            if key in kwargs:
+                value = kwargs[key]
+                if isinstance(value, (list, tuple)):
+                    value = ','.join(value)
+                payload[key] = value
+        # filter:
+        #  xtyp=stone_ice_fall
+        #  qa=draft,great
+        #  xalt=2000,9000
+        #  l=fr
+        #  xpar=1,10
+        #  ximp=1,10
+        #  xsev=1d_to_3d
+        #  q=title
         self._short_documents = self._api.list(url=self.API_URL, **payload)
         self._documents = {}
         self._get_documents()
@@ -261,8 +436,10 @@ class SeracQuery:
     ##############################################
 
     def _get_document(self, document_id: int) -> SeracDocument:
-       data = self._api.get(url=(self.API_URL, document_id), cook='fr', verbose=False)
-       return SeracDocument(data)
+        # cook: process markdown to html
+        # , cook='fr'
+        data = self._api.get(url=(self.API_URL, document_id), verbose=False)
+        return SeracDocument(data)
 
     ##############################################
 
@@ -274,3 +451,39 @@ class SeracQuery:
             self._documents[document_id] = document
             if i % 100 == 0:
                 print(f'Retrieved {i+1}/{number_of_documents}')
+
+    ##############################################
+
+    def scan(self) -> None:
+        keys = set()
+        for document in self:
+            keys |= {key for key in document.json.keys()}
+        key_values = {key: set() for key in keys}
+
+        for document in self:
+            for key, value in document.json.items():
+                match value:
+                    case int() | float() | str():
+                        key_values[key].add(value)
+                    case dict():
+                        key_values[key] |= {_ for _ in value.keys()}
+                    case list():
+                        if value:
+                            match value[0]:
+                                case str():
+                                    key_values[key] |= {_ for _ in value}
+                                case dict():
+                                    for lvalue in value:
+                                        key_values[key] |= {_ for _ in lvalue.keys()}
+
+        for key, values in key_values.items():
+            if values:
+                if key in ('date',):
+                    dates = sorted(values)
+                    key_values[key] = (dates[0], dates[-1])
+                else:
+                    if isinstance(list(values)[0], (int, float)):
+                        key_values[key] = (min(values), max(values))
+
+        print('Keys:')
+        pprint(key_values)
