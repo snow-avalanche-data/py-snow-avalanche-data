@@ -18,6 +18,12 @@
 #
 ####################################################################################################
 
+"""This module implements a client for the https://www.camptocamp.org API.
+
+"""
+
+####################################################################################################
+
 import datetime
 import requests
 import logging
@@ -29,7 +35,6 @@ class ClientLogin:
     ##############################################
 
     def __init__(self, username, password):
-
         self.username = username
         self.password = password
 
@@ -40,7 +45,6 @@ class LoginData:
     ##############################################
 
     def __init__(self, json):
-
         self._language = json['lang']
         self._expire = datetime.datetime.fromtimestamp(json['expire'])
         self._id = json['id']
@@ -113,7 +117,6 @@ class SearchSettings:
                  waypoint=False,
                  xreport=False,
     ):
-
         self._limit = limit
         self._language = language
 
@@ -138,7 +141,6 @@ class SearchSettings:
     def language(self, value):
         self._language = value
 
-
     @property
     def limit(self):
         return self._limit
@@ -146,7 +148,6 @@ class SearchSettings:
     @limit.setter
     def limit(self, value):
         self._limit = value
-
 
     @property
     def area(self):
@@ -156,7 +157,6 @@ class SearchSettings:
     def area(self, value):
         self._area = value
 
-
     @property
     def article(self):
         return self._article
@@ -164,7 +164,6 @@ class SearchSettings:
     @article.setter
     def article(self, value):
         self._article = value
-
 
     @property
     def book(self):
@@ -174,7 +173,6 @@ class SearchSettings:
     def book(self, value):
         self._book = value
 
-
     @property
     def image(self):
         return self._image
@@ -182,7 +180,6 @@ class SearchSettings:
     @image.setter
     def image(self, value):
         self._image = value
-
 
     @property
     def map(self):
@@ -192,7 +189,6 @@ class SearchSettings:
     def map(self, value):
         self._map = value
 
-
     @property
     def outing(self):
         return self._outing
@@ -200,7 +196,6 @@ class SearchSettings:
     @outing.setter
     def outing(self, value):
         self._outing = value
-
 
     @property
     def route(self):
@@ -210,7 +205,6 @@ class SearchSettings:
     def route(self, value):
         self._route = value
 
-
     @property
     def userprofile(self):
         return self._userprofile
@@ -219,7 +213,6 @@ class SearchSettings:
     def userprofile(self, value):
         self._userprofile = value
 
-
     @property
     def waypoint(self):
         return self._waypoint
@@ -227,7 +220,6 @@ class SearchSettings:
     @waypoint.setter
     def waypoint(self, value):
         self._waypoint = value
-
 
     @property
     def xreport(self):
@@ -271,7 +263,6 @@ class VersionedObject:
     ##############################################
 
     def __init__(self, json):
-
         self._version = json['version']
 
     ##############################################
@@ -287,7 +278,6 @@ class TypedObject(VersionedObject):
     ##############################################
 
     def __init__(self, json):
-
         VersionedObject.__init__(self, json)
         self._type = json['type']
 
@@ -321,9 +311,7 @@ class Client:
     ##############################################
 
     def __init__(self, client_login=None):
-
         self._login_data = None
-
         self._client_login = client_login
         if client_login is not None:
             self.login()
@@ -331,19 +319,16 @@ class Client:
     ##############################################
 
     def _make_url(self, *args):
-
         return self.API_URL + '/' + '/'.join(args)
 
     ##############################################
 
     def _make_url_for_document(self, document):
-
         return self._make_url(self.TYPE_TO_URL[document['type']], str(document['document_id']))
 
     ##############################################
 
     def _headers_for_authorization(self):
-
         headers = {}
         if self.logged:
             headers['Authorization'] = 'JWT token="{}"'.format(self._login_data.token)
@@ -352,9 +337,7 @@ class Client:
     ##############################################
 
     def _check_json_response(self, response):
-
         response.raise_for_status()
-
         json = response.json()
         self._logger.debug(json)
         if 'status' in json and json['status'] == 'error':
@@ -368,7 +351,6 @@ class Client:
     ##############################################
 
     def _post_put(self, url, payload, requests_method):
-
         if not self.logged:
             return
         self.update_login()
@@ -378,21 +360,17 @@ class Client:
     ##############################################
 
     def _post(self, url, payload):
-
         self._post_put(url, payload, requests.post)
 
     ##############################################
 
     def _put(self, url, payload):
-
         self._post_put(url, payload, requests.put)
 
     ##############################################
 
     def health(self):
-
         """Query the health of the REST API service"""
-
         url = self._make_url('health')
         r = requests.get(url)
         return self._check_json_response(r)
@@ -400,7 +378,6 @@ class Client:
     ##############################################
 
     def login(self, remember=True, discourse=True):
-
         self._logger.info('Login to camptocamp.org with user {} ...'.format(self._client_login.username))
         payload = {
             'username': self._client_login.username,
@@ -426,7 +403,6 @@ class Client:
     ##############################################
 
     def update_login(self):
-
         if self.logged and self._login_data.expired:
             self._logger.info("Login expired")
             self.login()
@@ -434,7 +410,6 @@ class Client:
     ##############################################
 
     def area(self, document_id):
-
         url = self._make_url('areas', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -442,7 +417,6 @@ class Client:
     ##############################################
 
     def article(self, document_id):
-
         url = self._make_url('articles', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -450,7 +424,6 @@ class Client:
     ##############################################
 
     def image(self, document_id):
-
         url = self._make_url('images', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -458,7 +431,6 @@ class Client:
     ##############################################
 
     def map(self, document_id):
-
         url = self._make_url('maps', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -466,7 +438,6 @@ class Client:
     ##############################################
 
     def outing(self, document_id):
-
         url = self._make_url('outings', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -474,7 +445,6 @@ class Client:
     ##############################################
 
     def route(self, document_id):
-
         url = self._make_url('routes', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -482,7 +452,6 @@ class Client:
     ##############################################
 
     def user_profile(self, user_id=None):
-
         if user_id is None:
             if self.logged:
                 user_id = self._login_data.id
@@ -495,7 +464,6 @@ class Client:
     ##############################################
 
     def xreport(self, document_id):
-
         url = self._make_url('xreports', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -503,7 +471,6 @@ class Client:
     ##############################################
 
     def waypoint(self, document_id):
-
         url = self._make_url('waypoints', str(document_id))
         r = requests.get(url)
         return self._check_json_response(r)
@@ -511,7 +478,6 @@ class Client:
     ##############################################
 
     def search(self, search_string, settings=None):
-
         """Search documents
 
         cf. https://github.com/c2corg/v6_api/blob/master/c2corg_api/views/search.py
@@ -536,7 +502,6 @@ class Client:
             given, all document types are returned. Example: `...&t=w,r`
             searches only for waypoints and routes.
         """
-
         if settings is None:
             settings = SearchSettings()
         url = self._make_url('search')
@@ -552,14 +517,12 @@ class Client:
     ##############################################
 
     def post(self, document):
-
         url = self._make_url_for_document(document)
         self._post(url, document)
 
     ##############################################
 
     def update(self, message, document):
-
         url = self._make_url_for_document(document)
         payload = {'message': message, 'document': document}
         self._put(url, payload)
