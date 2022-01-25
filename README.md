@@ -35,7 +35,7 @@ rescue operation and forensic report.
 [SERAC](https://www.camptocamp.org/serac) is an accident database managed by the C2C association.
 
 * [SERAC reports](https://www.camptocamp.org/xreports)
-* [Notes on SERAC](https://www.camptocamp.org/articles/697210/fr/base-serac-de-recits-d-incidents-et-accidents]
+* [Notes on SERAC](https://www.camptocamp.org/articles/697210/fr/base-serac-de-recits-d-incidents-et-accidents)
 * [Licenses](https://www.camptocamp.org/articles/106728/fr/licences-des-contenus)
 
 **How to use the API**
@@ -70,7 +70,7 @@ http://www.data-avalanche.org is a snow avalanche database managed by the releva
 * 2014 : État des lieux et diagnostic
 
 **Researchers**
-* [Maud Vanpoulle](http://l-vis.univ-lyon1.fr/staff/maud-vanpoulle)
+* [Maud Vanpoulle](http://l-vis.univ-lyon1.fr/staff/maud-vanpoulle) /
   [Laboratoire sur les Vulnérabilités et l’Innovation dans le Sport (L-VIS, Université de Lyon 1)](http://l-vis.univ-lyon1.fr)
 
 # Data Analysis
@@ -103,13 +103,13 @@ The source code features
 
 ## Software Dependencies
 
-* [Numpy](https://numpy.org) — a fundamental package for scientific computing.
-* [Matplotlib](https://matplotlib.org) — a comprehensive library for creating static, animated, and interactive visualizations.
+* [Numpy](https://numpy.org) a fundamental package for scientific computing.
+* [Matplotlib](https://matplotlib.org) a comprehensive library for creating static, animated, and interactive visualizations.
   Matplotlib is used to generate publication quality figures.
-* [xlrd](https://github.com/python-excel/xlrd) — a library for reading data from Excel files in the historical .xls format.
+* [xlrd](https://github.com/python-excel/xlrd) a library for reading data from Excel files in the historical .xls format.
   [doc](https://xlrd.readthedocs.io/en/latest)
   see also https://www.python-excel.org and [openpyxl](https://openpyxl.readthedocs.io/en/stable)
-* [requests](https://docs.python-requests.org/en/latest) — a simple HTTP library
+* [requests](https://docs.python-requests.org/en/latest) a simple HTTP library
 
 # About Authors
 
