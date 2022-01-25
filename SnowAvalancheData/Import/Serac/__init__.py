@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# Anena - 
+# SnowAvalancheData - 
 # Copyright (C) 2022 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
