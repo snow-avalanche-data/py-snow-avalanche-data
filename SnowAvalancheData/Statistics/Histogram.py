@@ -775,7 +775,7 @@ class EnumHistogram(Histogram):
 
     ##############################################
 
-    def to_graph(self):
+    def to_graph(self, non_null=True):
         # Fixme: duplicated code
         self.compute_errors()
 
@@ -786,6 +786,12 @@ class EnumHistogram(Histogram):
         y_errors = np.copy(self._errors[bin_slice])
 
         x = np.arange(binning.number_of_bins)
+
+        if non_null:
+            indices = np.where(y != 0)
+            x = x[indices]
+            y = y[indices]
+            y_errors = y_errors[indices]
 
         return x, y, y_errors
 

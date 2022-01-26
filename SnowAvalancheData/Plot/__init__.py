@@ -18,6 +18,10 @@
 #
 ####################################################################################################
 
+####################################################################################################
+
+from pathlib import Path
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -81,21 +85,32 @@ class Figure:
     ##############################################
 
     def bar(self, histogram: EnumHistogram, title: str=None, axe: list=None) -> None:
+        ax = self._get_axe(axe)
+
+        indexes, y, y_errors = histogram.to_graph()
+
+        # print('---')
+        # print(indexes, histogram.labels)
+
         labels = []
         has_long_label = False
-        for label in histogram.labels:
+        for i, label in enumerate(histogram.labels):
+            if i not in indexes:
+                continue
             if len(label) > 5:
                 label = label[:5]
                 has_long_label = True
             labels.append(label)
 
-        ax = self._get_axe(axe)
-        indexes, y, y_errors = histogram.to_graph()
+        indexes = np.arange(0, len(indexes))
+        # print(indexes, labels)
+
         ax.bar(indexes, y, width=.3, yerr=y_errors)   # , label=title
         ax.set_title(title or histogram.title)
         ax.set_xticks(indexes, labels=labels)
         ax.grid(True)
         if has_long_label:
+            # Fixme: -> func
             for tick in ax.get_xticklabels():
                 tick.set_rotation(45)
 
@@ -103,23 +118,44 @@ class Figure:
 
     def histogram(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
+
         x, y, x_errors, y_errors, edges = histogram.to_graph(non_null=False)
         ax.stairs(y, edges, fill=True)
         x, y, x_errors, y_errors = histogram.to_graph()
         ax.errorbar(x, y, y_errors, fmt='o', linewidth=2, capsize=6)
+
         ax.set_title(title or histogram.title)
         ax.set_xlabel(histogram.unit)
-        # ax.set_xticks(indexes, labels=histogram.labels)
         ax.grid(True)
+
+        binning = histogram.binning
+        # x_ticks = np.arange(binning.interval.inf, binning.interval.sup, binning.bin_width)
+        offset = binning.bin_width / 2
+        inf = x[0]-offset
+        sup = x[-1]+3*offset
+        x_ticks = np.arange(inf, sup, step=binning.bin_width)
+        ax.set_xticks(x_ticks)
+        # Fixme: inf!
+        # ax.set_xlim(0, sup)
+        ax.set_xlim(inf, sup)
+        if len(x_ticks) > 10:
+            for tick in ax.get_xticklabels():
+                tick.set_rotation(90)
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.tick_params.html
+        # ax.tick_params(axis='x', Labelsize=)
 
     ##############################################
 
     def bar_number(self, histogram: Histogram, title: str=None, axe: list=None) -> None:
         ax = self._get_axe(axe)
+
         x, y, x_errors, y_errors = histogram.to_graph(centred=False)
-        ax.bar(x, y, width=.3, yerr=y_errors)
+        labels = [str(int(_)) for _ in x]
+        indexes = np.arange(0, len(x))
+
+        ax.bar(indexes, y, yerr=y_errors, width=.3)
         ax.set_title(title or histogram.title)
-        ax.set_xticks(x, labels=[str(int(_)) for _ in x])
+        ax.set_xticks(indexes, labels=labels)
         ax.grid(True)
 
     ##############################################
@@ -131,9 +167,10 @@ class Figure:
         ax = self._figure.add_subplot(self._number_of_rows, self._number_of_columns, self._location +1, projection='polar')
         # theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
         theta = np.array([90, 45, 0, 315, 271, 225, 181, 135]) * 2*np.pi / 360
-        ax.bar(theta, y + y_errors, width=(np.pi/4 * .90), color='tab:blue', alpha=.8)
-        ax.bar(theta, y, width=(np.pi/4 * .90), color='tab:blue', alpha=1.0)
-        ax.bar(theta, y - y_errors, width=(np.pi/4 * .90), color='white', alpha=.8)
+        ax.bar(theta, y, yerr=y_errors, width=(np.pi/4 * .90), color='tab:blue', alpha=.8)
+        # ax.bar(theta, y + y_errors, width=(np.pi/4 * .90), color='tab:blue', alpha=.8)
+        # ax.bar(theta, y, width=(np.pi/4 * .90), color='tab:blue', alpha=1.0)
+        # ax.bar(theta, y - y_errors, width=(np.pi/4 * .90), color='white', alpha=.8)
         ax.set_title(title or histogram.title)
         ax.set_xticks(theta, labels=histogram.labels)
         ax.grid(True)
@@ -168,3 +205,9 @@ class Figure:
         # plt.xticks(np.arange(x_size) +.5, labels, rotation='vertical')
         # labels = [str(x) for x in self._binning.y.bin_centers]
         # plt.yticks(np.arange(y_size) +.5, labels)
+
+    ##############################################
+
+    def save(self, path: Path) -> None:
+        print(f'Save {path}')
+        self._figure.savefig(path)

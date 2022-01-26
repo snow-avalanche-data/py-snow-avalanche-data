@@ -24,8 +24,11 @@ from enum import Enum
 from pathlib import Path
 from pprint import pprint
 
+import matplotlib.pyplot as plt
+
 from SnowAvalancheData.Data import Accidents, Accident
 from SnowAvalancheData.Data.DataType import *
+from SnowAvalancheData.Plot import Figure
 from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
 
 ####################################################################################################
@@ -42,7 +45,7 @@ attribute_bin_width = {
     'altitude': 250,   # m
     'height_difference': 100,   # m
     'length': 100,   # m
-    'rescue_delay': 15,   # min
+    'rescue_delay': 20,   # min
     'thickness_max': 20,   # cm
     'width': 15,   # m
 }
@@ -97,13 +100,10 @@ print('Plot...')
 # c = histogram.cumulative(normalise=True)
 # print(c)
 
-from SnowAvalancheData.Plot import Figure
-import matplotlib.pyplot as plt
-
 def plot_histogram(figure, attribute):
     histogram = histograms[attribute]
     match attribute:
-        case 'bra_level':
+        case 'bra_level' | 'departement':
             figure.bar_number(histogram)
         case 'orientation':
             figure.polar_bar(histogram)
@@ -150,17 +150,17 @@ for attribute in (
 
 figure4 = Figure(number_of_rows=3, number_of_columns=4)
 for attribute in (
-        'carried_away',
-        'dead',
-        'full_bluried',
-        'head_bluried',
-        #
-        'injured',
         'number_of_persons',
-        'partial_bluried_critical',
-        'partial_bluried_non_critical',
-        #
         'safe',
+        'injured',
+        'dead',
+        #
+        'carried_away',
+        'partial_bluried_non_critical',
+        'partial_bluried_critical',
+        #
+        'head_bluried',
+        'full_bluried',
 ):
     plot_histogram(figure4, attribute)
 
@@ -174,9 +174,9 @@ for attribute in (
 ):
     plot_histogram(figure5, attribute)
 
-plt.show()
+# figures = {key: value for key, value in globals().items() if isinstance(value, Figure)}
+# for name, figure in figures.items():
+#     figure.save(f'{name}.svg')
 
-# too large label
-# explore correlation
-# plot ratio
-# plot ->
+print('Show...')
+plt.show()
