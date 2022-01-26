@@ -24,11 +24,6 @@
 
 * It doesn't distinguish object dict by type, then it merges all the attributes.
 
-**See also**
-
-* https://pydantic-docs.helpmanual.io
-* https://python-jsonschema.readthedocs.io/en/stable/
-
 """
 
 __all__ = ['JsonSchemaInspector', 'SchemaNode']
