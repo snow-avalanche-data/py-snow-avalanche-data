@@ -70,13 +70,38 @@ for attribute, type_ in Accident.ATTRIBUTE_TYPE.items():
         print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
         histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
 
+ratio_attributes = (
+    'injured',
+    'dead',
+    'carried_away',
+    'partial_bluried_critical',
+    'partial_bluried_non_critical',
+    'head_bluried',
+    'full_bluried',
+    'safe',
+)
+ratio_histograms = {}
+for attribute in ratio_attributes:
+    title = f'ratio {histograms[attribute].title}'
+    unit = 'percent'
+    inf = 0
+    sup = 100
+    bin_width = 10
+    ratio_histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
+
 print('Fill histograms')
+# Fixme: also impl vectorize / vs cpu ram
 for accident in filtered_accidents:
     # pprint(accident.__dict__)
     for attribute, histogram in histograms.items():
         value = getattr(accident, attribute)
         if value is not None:
             histogram.fill(value)
+            if attribute in ratio_attributes:
+                N = getattr(accident, 'number_of_persons')
+                if N is not None:
+                    ratio_histogram = ratio_histograms[attribute]
+                    ratio_histogram.fill(value/N*100)
 
 for attribute, histogram in histograms.items():
     histogram.normalise(to_percent=True, clone=False)
@@ -114,6 +139,7 @@ def plot_histogram(figure, attribute):
                case Histogram():
                    figure.histogram(histogram)
 
+# Fixme: context manager
 figure1 = Figure(number_of_rows=2, number_of_columns=3)
 for attribute in (
         'activity',
@@ -164,7 +190,23 @@ for attribute in (
 ):
     plot_histogram(figure4, attribute)
 
-figure5 = Figure(number_of_rows=2, number_of_columns=2)
+figure5 = Figure(number_of_rows=3, number_of_columns=4)
+for attribute in (
+        'safe',
+        'injured',
+        'dead',
+        #
+        'carried_away',
+        'partial_bluried_non_critical',
+        'partial_bluried_critical',
+        #
+        'head_bluried',
+        'full_bluried',
+):
+    # plot_histogram(figure5, f'ratio_{attribute}')
+    figure5.histogram(ratio_histograms[attribute])
+
+figure6 = Figure(number_of_rows=2, number_of_columns=2)
 for attribute in (
         'alert_device',
         'alert_person',
@@ -172,7 +214,7 @@ for attribute in (
         'rescue_delay',
         # 'doctor_on_site',
 ):
-    plot_histogram(figure5, attribute)
+    plot_histogram(figure6, attribute)
 
 # figures = {key: value for key, value in globals().items() if isinstance(value, Figure)}
 # for name, figure in figures.items():
