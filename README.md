@@ -111,8 +111,13 @@ The source code features
   see also https://www.python-excel.org and [openpyxl](https://openpyxl.readthedocs.io/en/stable)
 * [requests](https://docs.python-requests.org/en/latest) a simple HTTP library
 
+## Interesting Software
+
+* [Pandas](https://pandas.pydata.org) a fast, powerful, flexible and easy to use open source data
+  analysis and manipulation tool, built on top of the Python programming language.
+
 # About Authors
 
-* Fabrice SALVAIRE holds a PhD in data analysis in high energy physics, works as computer scientist,
-  and perform climbing, mountaineering and ski touring during his free time (affiliated with the
-  sports federation [FSGT/ROC14](https://www.fsgt.org/activites/escal_mont)).
+* **Fabrice SALVAIRE** holds a PhD in data analysis in high energy physics, works as computer
+  scientist, and perform climbing, mountaineering and ski touring during his free time (affiliated
+  to the sports federation [FSGT/ROC14](https://www.fsgt.org/activites/escal_mont)).
