@@ -172,6 +172,14 @@ class Accident(BaseModel):
 
     ##############################################
 
+    @classmethod
+    def generate_json_schema(cls) -> str:
+        # https://pydantic-docs.helpmanual.io/usage/schema/
+        # Fixme: ValueError: Value not declarable with JSON Schema, field: name='coordinate' type=Optional[Coordinate] required=False default=None
+        return cls.schema_json(indent=4)
+
+    ##############################################
+
     # Fixme: attribute vs field
 
     @classmethod

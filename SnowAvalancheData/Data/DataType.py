@@ -62,6 +62,16 @@ class EnumMixin:
     ##############################################
 
     @classmethod
+    def __modify_schema__(cls, field_schema):
+        # Fixme:
+        field_schema.update(
+            pattern='...',
+            examples=['...'],
+        )
+
+    ##############################################
+
+    @classmethod
     def to_json(cls, value) -> str:
         _ = str(value).lower()
         return _.split('.')[1]
@@ -176,6 +186,16 @@ class Inclination:
 
     ##############################################
 
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        # Fixme:
+        field_schema.update(
+            pattern='...',
+            examples=['...'],
+        )
+
+    ##############################################
+
     def __init__(self, value: str) -> None:
         self._value = value
 
@@ -212,6 +232,16 @@ class Coordinate:
             return cls(**value)
         print(value)
         raise TypeError()
+
+    ##############################################
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        # Fixme:
+        field_schema.update(
+            pattern='...',
+            examples=['...'],
+        )
 
     ##############################################
 
@@ -258,6 +288,16 @@ class Delay:
         elif isinstance(value, int):
             return cls(minutes=value)
         raise TypeError()
+
+    ##############################################
+
+    @classmethod
+    def __modify_schema__(cls, field_schema):
+        # Fixme:
+        field_schema.update(
+            pattern='...',
+            examples=['...'],
+        )
 
     ##############################################
 
