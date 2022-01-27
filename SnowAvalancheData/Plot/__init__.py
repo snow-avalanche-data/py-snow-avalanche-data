@@ -35,6 +35,8 @@ class Figure:
     A4 = (297, 210)
     A5 = (A4[1], A4[0]//2)   # 148
 
+    POOL = {}
+
     ##############################################
 
     @classmethod
@@ -43,7 +45,14 @@ class Figure:
 
     ##############################################
 
-    def __init__(self, number_of_rows: int, number_of_columns: int) -> None:
+    def __init__(self,
+                 name: str,
+                 number_of_rows: int,
+                 number_of_columns: int,
+                 ) -> None:
+
+        self._name = str(name)
+        self.POOL[self._name] = self
 
         # https://matplotlib.org/stable/tutorials/intermediate/constrainedlayout_guide.html
         # https://matplotlib.org/stable/tutorials/intermediate/tight_layout_guide.html
@@ -63,6 +72,21 @@ class Figure:
         self._location = -1
         for _ in self._axes.flat:
             _.set_visible(False)
+
+    ##############################################
+
+    # def __del__(self):
+    #     pass
+
+    ##############################################
+
+    def __enter__(self):
+        return self
+
+    ##############################################
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        pass
 
     ##############################################
 

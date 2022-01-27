@@ -146,82 +146,81 @@ def plot_histogram(figure, attribute):
                case Histogram():
                    figure.histogram(histogram)
 
-# Fixme: context manager
-figure1 = Figure(number_of_rows=2, number_of_columns=3)
-for attribute in (
-        'activity',
-        'altitude',
-        'departement',   # -> map
-        # 'date',
-        'gear',
-):
-    plot_histogram(figure1, attribute)
+with Figure('figure1', number_of_rows=2, number_of_columns=3) as figure:
+    for attribute in (
+            'activity',
+            'altitude',
+            'departement',   # -> map
+            # 'date',
+            'gear',
+    ):
+        plot_histogram(figure, attribute)
 
-figure2 = Figure(number_of_rows=2, number_of_columns=4)
-for attribute in (
-        'bra_level',
-        'move_direction',
-        'orientation',
-        'snow_cohesion',
-        #
-        'snow_quality',
-        'start_reason',
-        'start_type',
-        # 'inclination',
+with Figure('figure2', number_of_rows=2, number_of_columns=4) as figure:
+    for attribute in (
+            'bra_level',
+            'move_direction',
+            'orientation',
+            'snow_cohesion',
+            #
+            'snow_quality',
+            'start_reason',
+            'start_type',
+            # 'inclination',
 ):
-    plot_histogram(figure2, attribute)
+        plot_histogram(figure, attribute)
 
-figure3 = Figure(number_of_rows=2, number_of_columns=2)
-for attribute in (
-        'length',
-        'width',
-        #
-        'height_difference',
-        'thickness_max',
-):
-    plot_histogram(figure3, attribute)
+with Figure('figure3', number_of_rows=2, number_of_columns=2) as figure:
+    for attribute in (
+            'length',
+            'width',
+            #
+            'height_difference',
+            'thickness_max',
+    ):
+        plot_histogram(figure, attribute)
 
-figure4 = Figure(number_of_rows=3, number_of_columns=4)
-for attribute in (
-        'number_of_persons',
-        'safe',
-        'injured',
-        'dead',
-        #
-        'carried_away',
-        'partial_bluried_non_critical',
-        'partial_bluried_critical',
-        #
-        'head_bluried',
-        'full_bluried',
-):
-    plot_histogram(figure4, attribute)
+with Figure('figure', number_of_rows=3, number_of_columns=4) as figure:
+    for attribute in (
+            'number_of_persons',
+            'safe',
+            'injured',
+            'dead',
+            #
+            'carried_away',
+            'partial_bluried_non_critical',
+            'partial_bluried_critical',
+            #
+            'head_bluried',
+            'full_bluried',
+    ):
+        plot_histogram(figure, attribute)
 
-figure5 = Figure(number_of_rows=3, number_of_columns=4)
-for attribute in (
-        'safe',
-        'injured',
-        'dead',
-        #
-        'carried_away',
-        'partial_bluried_non_critical',
-        'partial_bluried_critical',
-        #
-        'head_bluried',
-        'full_bluried',
-):
-    # plot_histogram(figure5, f'ratio_{attribute}')
-    figure5.histogram(ratio_histograms[attribute])
+with Figure('figure5', number_of_rows=3, number_of_columns=4) as figure:
+    for attribute in (
+            'safe',
+            'injured',
+            'dead',
+            #
+            'carried_away',
+            'partial_bluried_non_critical',
+            'partial_bluried_critical',
+            #
+            'head_bluried',
+            'full_bluried',
+    ):
+        # plot_histogram(figure, f'ratio_{attribute}')
+        figure.histogram(ratio_histograms[attribute])
 
-figure6 = Figure(number_of_rows=2, number_of_columns=2)
-for attribute in (
-        'alert_device',
-        'alert_person',
-        #
-        'rescue_delay',
-        # 'doctor_on_site',
-):
-    plot_histogram(figure6, attribute)
+with Figure('figure6', number_of_rows=2, number_of_columns=2) as figure:
+    for attribute in (
+            'alert_device',
+            'alert_person',
+            #
+            'rescue_delay',
+            # 'doctor_on_site',
+    ):
+        plot_histogram(figure, attribute)
 
 # figures = {key: value for key, value in globals().items() if isinstance(value, Figure)}
 # for name, figure in figures.items():
