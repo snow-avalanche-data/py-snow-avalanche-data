@@ -14,26 +14,11 @@ License](https://www.gnu.org/licenses/agpl-3.0.en.html).
 This repository contains also some French snow avalanche accident data stored in
 [JSON](https://www.json.org/json-en.html).
 
-* [Contribution guidelines for this project](docs/CONTRIBUTING.md)
+* [Features](docs/features.md)
 * [Origin of the data](docs/accident-data.md)
-* [Note on the code](implementation-details.md)
-
-# TODO List
-
-* look at https://pydantic-docs.helpmanual.io
-* merge c2c client code
-
-# Features
-
-The source code features
-
-* a module to implement an JSON format for accident
-* a module to perform introspection on JSON DATA and generate a schema
-* a module to import ANENA xls files
-* a module to implement a client to connect to the C2C API
-* a module to work with SERAC data
-* a module to perform statistical analyses
-* a module to generate plots
+* [Note on the code](docs/implementation-details.md)
+* [TODO list](docs/TODO.md)
+* [Contribution guidelines for this project](docs/CONTRIBUTING.md)
 
 # About Authors
 
