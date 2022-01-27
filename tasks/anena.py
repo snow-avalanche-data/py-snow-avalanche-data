@@ -1,11 +1,7 @@
-#! /usr/bin/env python3
-
-####################################################################################################
-
 ####################################################################################################
 #
-# SnowAvalancheData - 
-# Copyright (C) 2021 Fabrice Salvaire
+# SnowAvalancheData -
+# Copyright (C) 2022 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -22,29 +18,34 @@
 #
 ####################################################################################################
 
+####################################################################################################
+
 from pathlib import Path
 from pprint import pprint
+
+from invoke import task
 
 from SnowAvalancheData.Importer.Anena import AccidentBook, AccidentRegister, Accident
 
 ####################################################################################################
 
-xls_paths = Path('data').joinpath('anena-xls').glob('tableau-accidents-*-*.xls')
-xls_paths = sorted(xls_paths)
+def xls_paths() -> list[Path]:
+    xls_paths = Path('data', 'anena-xls').glob('tableau-accidents-*-*.xls')
+    return sorted(xls_paths)
 
-if False:
-    for path in xls_paths[:-1]:
-        book = AccidentBook(path)
-        Accident.learn(book[0])
-    Accident.dump()
+# for path in xls_paths[:-1]:
+#     book = AccidentBook(path)
+#     Accident.learn(book[0])
+# Accident.dump()
 
-if True:
+@task
+def to_json(ctx, path='anena-accidents.json'):
     accidents = AccidentRegister()
-    for path in xls_paths:
+    for path in xls_paths():
         book = AccidentBook(path)
         if book.start_year < 2019:
             print(f'Load {path}')
             accidents += book.to_accident_pre_2019()
-    path = Path('anena-accidents.json')
+    path = Path(path)
     print(f'Write {path}')
     accidents.write_json(path)
