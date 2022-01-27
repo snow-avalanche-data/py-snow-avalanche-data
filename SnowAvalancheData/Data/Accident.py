@@ -164,6 +164,14 @@ class Accident(BaseModel):
     def field_type(cls, attribute: str):
         return cls.__fields__[attribute].type_
 
+    ##############################################
+
+    @property
+    def rescue_delay_minutes(self) -> int:
+        if self.rescue_delay is None:
+            return None
+        return self.rescue_delay.minutes
+
 ####################################################################################################
 
 class AccidentList(BaseModel):

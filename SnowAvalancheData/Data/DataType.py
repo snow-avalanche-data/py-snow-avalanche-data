@@ -255,7 +255,7 @@ class Delay:
     def validate(cls, value) -> 'Delay':
         if isinstance(value, cls):
             return value
-        elif isinstance(value, float):
+        elif isinstance(value, int):
             return cls(minutes=value)
         raise TypeError()
 
