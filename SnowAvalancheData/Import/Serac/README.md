@@ -1,4 +1,4 @@
-# SERAC
+# SERAC Data Importer
 
 [SERAC](https://www.camptocamp.org/serac) est une base de données mondiale sur les accidents et
 incidents en montagne. Sa vocation est d'améliorer la sécurité dans la pratique de l'escalade et des
@@ -15,7 +15,7 @@ chercheurs.  Ces informations personnelles sont : fréquence de pratique de l'ac
 sorties réalisées dans l'année, autonomie dans l'activité, âge au moment de l’événement, sexe,
 nombre de blessures antérieures. »
 
-# JSON Schema
+## JSON Schema
 
 See https://github.com/c2corg/v6_api and the tool `SnowAvalancheData.Json.JsonSchema` to dump a JSON
 schema from a pool of JSON objects.
