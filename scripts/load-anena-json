@@ -34,7 +34,7 @@ from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Bin
 ####################################################################################################
 
 path = Path('data').joinpath('anena-accidents.json')
-print('Load {path}')
+print(f'Load {path}')
 accidents = Accidents.load_json(path)
 
 filtered_accidents = accidents.and_filter(
