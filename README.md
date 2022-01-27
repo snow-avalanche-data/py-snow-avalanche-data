@@ -18,7 +18,7 @@ This repository also contains some French snow avalanche accident data stored in
 
 * [Features](docs/features.md)
 * [Origin of the data](docs/accident-data.md)
-* [Note on the code](docs/implementation-details.md)
+* [Implementation details](docs/implementation-details.md)
 * [TODO list](docs/TODO.md)
 * [Contribution guidelines for this project](docs/CONTRIBUTING.md)
 * [About Authors](docs/authors.md)

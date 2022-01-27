@@ -1,4 +1,14 @@
-# Note on the code
+# Implementation Details
+
+## JSON Accident Report Format
+
+This project implements a [JSON](https://www.json.org/json-en.html) accident report format to store
+accident data.  JSON is a text format based on a subset of the JavaScript Programming Language
+Standard ECMA-262 3rd Edition - December 1999.  JSON is a data standard on the web and is also used
+by the SERAC API of [camptocamp](https://www.camptocamp.org/serac).
+
+Thanks to [Pydantic](https://pydantic-docs.helpmanual.io/usage/schema/), a JSON schema can be
+automatically generated from the code.
 
 ## Software Dependencies
 
