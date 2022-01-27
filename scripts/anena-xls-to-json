@@ -25,7 +25,7 @@
 from pathlib import Path
 from pprint import pprint
 
-from SnowAvalancheData.Import.Anena import AccidentBook, Accidents, Accident
+from SnowAvalancheData.Import.Anena import AccidentBook, AccidentRegister, Accident
 
 ####################################################################################################
 
@@ -39,7 +39,7 @@ if False:
     Accident.dump()
 
 if True:
-    accidents = Accidents()
+    accidents = AccidentRegister()
     for path in xls_paths:
         book = AccidentBook(path)
         if book.start_year < 2019:

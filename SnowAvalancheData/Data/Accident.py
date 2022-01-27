@@ -28,7 +28,7 @@ TODO: give a look at https://pydantic-docs.helpmanual.io
 
 __all__ = [
     'Accident',
-    'Accidents',
+    'AccidentRegister',
 ]
 
 ####################################################################################################
@@ -177,7 +177,13 @@ class Accident(BaseModel):
 class AccidentList(BaseModel):
 
     # https://pydantic-docs.helpmanual.io/usage/models/#custom-root-types
-    __root__: List[Accident]
+    # https://github.com/samuelcolvin/pydantic/issues/675
+    # https://github.com/romis2012/pydantic-collections
+    __root__: List[Accident] = []
+
+    class Config:
+        # Fixme: ???
+        json_encoders = Accident.Config.json_encoders
 
     ##############################################
 
@@ -190,14 +196,20 @@ class AccidentList(BaseModel):
     def __getitem__(self, item) -> Accident:
         return self.__root__[item]
 
+    def append(self, accident: Accident) -> None:
+        self.__root__.append(accident)
+
+    def extend(self, accident_list: 'AccidentList') -> None:
+        self.__root__.extend(accident_list)
+
 ####################################################################################################
 
-class Accidents:
+class AccidentRegister:
 
     ##############################################
 
     @classmethod
-    def load_json(cls, path: Path) -> 'Accidents':
+    def load_json(cls, path: Path) -> 'AccidentRegister':
         with open(path, 'r') as fh:
             data = json.load(fh)
         accidents = cls()
@@ -208,7 +220,7 @@ class Accidents:
     ##############################################
 
     def __init__(self) -> None:
-        self._items = []
+        self._items = AccidentList()
 
     ##############################################
 
@@ -223,12 +235,12 @@ class Accidents:
 
     ##############################################
 
-    # | 'Accidents'
-    def __iadd__(self, item: Accident) -> 'Accidents':
+    # | 'AccidentRegister'
+    def __iadd__(self, item: Accident) -> 'AccidentRegister':
         match item:
             case Accident():
                 self._items.append(item)
-            case Accidents():
+            case AccidentRegister():
                 self._items.extend(item)
         return self
 
@@ -241,25 +253,21 @@ class Accidents:
                 ensure_ascii=False,
                 sort_keys=True,
             )
-            data = [_.dict() for _ in self]
-            # See pydantic/main.py
-            # https://github.com/samuelcolvin/pydantic/issues/675
-            # https://github.com/romis2012/pydantic-collections
-            _ = Accident.__config__.json_dumps(data, default=Accident.__json_encoder__, **dumps_kwargs)
+            _ = self._items.json(**dumps_kwargs)
             fh.write(_)
 
     ##############################################
 
-    def and_filter(self, **kwargs) -> 'FilteredAccidents':
-        return FilteredAccidents(self, **kwargs)
+    def and_filter(self, **kwargs) -> 'FilteredAccidentRegister':
+        return FilteredAccidentRegister(self, **kwargs)
 
 ####################################################################################################
 
-class FilteredAccidents:
+class FilteredAccidentRegister:
 
     ##############################################
 
-    def __init__(self, parent: Accidents, items=None, **kwargs) -> None:
+    def __init__(self, parent: AccidentRegister, items=None, **kwargs) -> None:
         self._parent = parent
         if items is not None:
             self._items = list(items)
@@ -293,9 +301,9 @@ class FilteredAccidents:
 
     ##############################################
 
-    def __ior__(self, other: 'FilteredAccidents') -> 'FilteredAccidents':
+    def __ior__(self, other: 'FilteredAccidentRegister') -> 'FilteredAccidentRegister':
         items = set(iter(self)) | set(iter(other))
-        return FilteredAccidents(self.parent, items)
+        return FilteredAccidentRegister(self.parent, items)
 
     ##############################################
 

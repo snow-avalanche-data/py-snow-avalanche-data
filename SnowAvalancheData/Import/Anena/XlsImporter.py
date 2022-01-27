@@ -30,7 +30,7 @@ cell values and translate the enumerate from French to English.
 __all__ = [
     'AccidentBook',
     'Accident',
-    'Accidents',
+    'AccidentRegister',
 ]
 
 ####################################################################################################
@@ -48,7 +48,7 @@ import re
 import xlrd
 
 from SnowAvalancheData.Data import Accident as DataAccident
-from SnowAvalancheData.Data import Accidents
+from SnowAvalancheData.Data import AccidentRegister
 from SnowAvalancheData.Data import DataType
 from SnowAvalancheData.Data.DataType import Delay, Inclination
 
@@ -620,8 +620,8 @@ class AccidentBook:
 
     ##############################################
 
-    def to_accident_pre_2019(self) -> Accidents:
-        accidents = Accidents()
+    def to_accident_pre_2019(self) -> AccidentRegister:
+        accidents = AccidentRegister()
         sheet = self[0]
         with AccidentSheetContextManager(sheet) as cm:
             for row in sheet:

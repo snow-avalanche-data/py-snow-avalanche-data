@@ -26,7 +26,7 @@ from pprint import pprint
 
 import matplotlib.pyplot as plt
 
-from SnowAvalancheData.Data import Accidents, Accident
+from SnowAvalancheData.Data import AccidentRegister, Accident
 from SnowAvalancheData.Data.DataType import *
 from SnowAvalancheData.Plot import Figure
 from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
@@ -35,7 +35,7 @@ from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Bin
 
 path = Path('data').joinpath('anena-accidents.json')
 print(f'Load {path}')
-accidents = Accidents.load_json(path)
+accidents = AccidentRegister.load_json(path)
 
 filtered_accidents = accidents.and_filter(
     activity=lambda _: _ in (Activity.HIKING, Activity.MOUNTAINEERING),
