@@ -39,13 +39,13 @@ def xls_paths() -> list[Path]:
 # Accident.dump()
 
 @task
-def to_json(ctx, path='anena-accidents.json'):
+def to_json(ctx, json_path='anena-accidents.json'):
     accidents = AccidentRegister()
     for path in xls_paths():
         book = AccidentBook(path)
         if book.start_year < 2019:
             print(f'Load {path}')
             accidents += book.to_accident_pre_2019()
-    path = Path(path)
+    path = Path(json_path)
     print(f'Write {path}')
     accidents.write_json(path)
