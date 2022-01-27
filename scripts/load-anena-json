@@ -61,8 +61,7 @@ attribute_mapper = {
 
 print('Create histograms')
 histograms = {}
-for attribute in Accident.__fields__:
-    type_ = Accident.field_type(attribute)
+for attribute, type_ in Accident.attribut_types:
     title = attribute_title.get(attribute, attribute.replace('_', ' '))
     unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
     if issubclass(type_, Enum):
@@ -76,18 +75,8 @@ for attribute in Accident.__fields__:
         print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
         histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
 
-ratio_attributes = (
-    'injured',
-    'dead',
-    'carried_away',
-    'partial_bluried_critical',
-    'partial_bluried_non_critical',
-    'head_bluried',
-    'full_bluried',
-    'safe',
-)
 ratio_histograms = {}
-for attribute in ratio_attributes:
+for attribute in ACCIDENT.RATIO_ATTRIBUTES:
     title = f'ratio {histograms[attribute].title}'
     unit = 'percent'
     inf = 0

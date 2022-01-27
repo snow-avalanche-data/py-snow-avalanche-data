@@ -10,8 +10,7 @@
 * [Numpy](https://numpy.org) a fundamental package for scientific computing.
 * [Matplotlib](https://matplotlib.org) a comprehensive library for creating static, animated, and interactive visualisations.
   Matplotlib is used to generate publication quality figures.
-
-## Interesting Software
-
 * [Pandas](https://pandas.pydata.org) a fast, powerful, flexible and easy to use open source data
   analysis and manipulation tool, built on top of the Python programming language.
+
+## Interesting Software

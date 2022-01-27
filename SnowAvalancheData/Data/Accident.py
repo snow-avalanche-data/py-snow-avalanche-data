@@ -46,6 +46,7 @@ import json
 # https://github.com/ijl/orjson
 
 from pydantic import BaseModel
+import pandas as pd
 
 from .DataType import *
 
@@ -158,11 +159,37 @@ class Accident(BaseModel):
     ):
         ATTRIBUTE_UNIT[_] = 'number of persons'
 
+    RATIO_ATTRIBUTES: ClassVar = (
+        'injured',
+        'dead',
+        'carried_away',
+        'partial_bluried_critical',
+        'partial_bluried_non_critical',
+        'head_bluried',
+            'full_bluried',
+        'safe',
+    )
+
     ##############################################
 
+    # Fixme: attribute vs field
+
     @classmethod
-    def field_type(cls, attribute: str):
+    def attribute_type(cls, attribute: str):
         return cls.__fields__[attribute].type_
+
+    @classmethod
+    def attribute_types(cls) -> Iterator[tuple[str, type]]:
+        for attribute in Accident.__fields__:
+            type_ = Accident.attribute_type(attribute)
+            yield attribute, type_
+
+    @classmethod
+    def number_attributes(cls) -> Iterator[str]:
+        for attribute in cls.__fields__:
+            type_ = cls.attribute_type(attribute)
+            if type_ in (int, float, Delay):
+                yield attribute
 
     ##############################################
 
@@ -259,7 +286,60 @@ class AccidentList(BaseModel):
 
 ####################################################################################################
 
-class AccidentRegister:
+class AccidentRegisterMixin:
+
+    ##############################################
+
+    def __init___(self) -> None:
+        self._items = None
+
+    ##############################################
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __iter__(self) -> Iterator[Accident]:
+        return iter(self._items)
+
+    def __getitem__(self, i: int) -> Accident:
+        return self._items[i]
+
+    ##############################################
+
+    def write_json(self, path: Path) -> None:
+        with open(path, 'w') as fh:
+            dumps_kwargs = dict(
+                indent=4,
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+            _ = self._items.json(**dumps_kwargs)
+            fh.write(_)
+
+    ##############################################
+
+    def inf_sup(self, attribute: str) -> tuple[int, int]:
+        inf = None
+        sup = None
+        for item in self:
+            value = getattr(item, attribute)
+            if value is not None:
+                if inf is None:
+                    inf = value
+                    sup = value
+                else:
+                    inf = min(inf, value)
+                    sup = max(sup, value)
+        return inf, sup
+
+    ##############################################
+
+    def data_frame(self) -> pd.DataFrame:
+        return AccidentDataFrame(self)
+
+####################################################################################################
+
+class AccidentRegister(AccidentRegisterMixin):
 
     ##############################################
 
@@ -279,17 +359,6 @@ class AccidentRegister:
 
     ##############################################
 
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __iter__(self) -> Iterator[Accident]:
-        return iter(self._items)
-
-    def __getitem__(self, i: int) -> Accident:
-        return self._items[i]
-
-    ##############################################
-
     # | 'AccidentRegister'
     def __iadd__(self, item: Accident) -> 'AccidentRegister':
         match item:
@@ -301,24 +370,12 @@ class AccidentRegister:
 
     ##############################################
 
-    def write_json(self, path: Path) -> None:
-        with open(path, 'w') as fh:
-            dumps_kwargs = dict(
-                indent=4,
-                ensure_ascii=False,
-                sort_keys=True,
-            )
-            _ = self._items.json(**dumps_kwargs)
-            fh.write(_)
-
-    ##############################################
-
     def and_filter(self, **kwargs) -> 'FilteredAccidentRegister':
         return FilteredAccidentRegister(self, **kwargs)
 
 ####################################################################################################
 
-class FilteredAccidentRegister:
+class FilteredAccidentRegister(AccidentRegisterMixin):
 
     ##############################################
 
@@ -337,12 +394,6 @@ class FilteredAccidentRegister:
     def parent(self):
         return self._parent
 
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __iter__(self) -> Iterator[Accident]:
-        return iter(self._items)
-
     ##############################################
 
     def and_filter(self, **kwargs) -> None:
@@ -360,18 +411,53 @@ class FilteredAccidentRegister:
         items = set(iter(self)) | set(iter(other))
         return FilteredAccidentRegister(self.parent, items)
 
+####################################################################################################
+
+class AccidentDataFrame:
+
     ##############################################
 
-    def inf_sup(self, attribute: str) -> tuple[int, int]:
-        inf = None
-        sup = None
-        for item in self:
-            value = getattr(item, attribute)
-            if value is not None:
-                if inf is None:
-                    inf = value
-                    sup = value
-                else:
-                    inf = min(inf, value)
-                    sup = max(sup, value)
-        return inf, sup
+    def __init__(self, register: AccidentRegisterMixin) -> None:
+        attributes = [_ for _ in Accident.__fields__ if _ not in ('rescue_delay',)]
+        data = {
+            attribute: [getattr(_, attribute) for _ in register]
+            for attribute in attributes
+        }
+        df = pd.DataFrame(data)
+
+        df['rescue_delay'] = [_.rescue_delay_minutes for _ in register]
+
+        df['area'] = df['length'] * df['width']
+        df['volume'] = df['area'] * df['thickness_max'] / 100
+        for attribute in Accident.RATIO_ATTRIBUTES:
+            df[f'ratio_{attribute}'] = df[attribute] / df['number_of_persons'] * 100
+
+        self.df = df
+
+    ##############################################
+
+    def inf_sup(self):
+        # for attribute in Accident.number_attributes():
+        #     print(attribute)
+        #     print(self.df.agg({attribute: ['min', 'max']}))
+        kwargs = {
+            attribute: ['min', 'max']
+            for attribute in Accident.number_attributes()
+        }
+        return self.df.agg(kwargs)
+
+    ##############################################
+
+    def to_csv(self, path: Path) -> None:
+        self.df.to_csv(path)
+
+    def to_excel(self, path: Path) -> None:
+        """Export to Excel .xlsx file"""
+        self.df.to_excel(path, sheet_name='accidents', index=False)
+
+    def to_odf(self, path: Path) -> None:
+        # Currently pandas only supports reading OpenDocument spreadsheets.
+        raise NotImplementedError
+
+    def to_json(self) -> None:
+        return self.df.to_json(orient='records', force_ascii=False)
