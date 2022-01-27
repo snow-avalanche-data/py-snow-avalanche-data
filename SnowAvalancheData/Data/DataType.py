@@ -46,6 +46,22 @@ class EnumMixin:
     ##############################################
 
     @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    ##############################################
+
+    @classmethod
+    def validate(cls, value):
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, str):
+            return getattr(cls, value.upper())
+        raise TypeError()
+
+    ##############################################
+
+    @classmethod
     def to_json(cls, value) -> str:
         _ = str(value).lower()
         return _.split('.')[1]
@@ -144,6 +160,22 @@ class Inclination:
 
     ##############################################
 
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    ##############################################
+
+    @classmethod
+    def validate(cls, value) -> 'Inclination':
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, str):
+            return cls(value)
+        raise TypeError('string required')
+
+    ##############################################
+
     def __init__(self, value: str) -> None:
         self._value = value
 
@@ -152,9 +184,34 @@ class Inclination:
     def __repr__(self) -> str:
         return self._value
 
+    ##############################################
+
+    def to_json(self):
+        return self._value
+
 ####################################################################################################
 
 class Coordinate:
+
+    ##############################################
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    ##############################################
+
+    @classmethod
+    def validate(cls, value) -> 'Coordinate':
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, str):
+            return cls(value=value)
+        elif isinstance(value, dict):
+            # Fixme: more check ???
+            return cls(**value)
+        print(value)
+        raise TypeError()
 
     ##############################################
 
@@ -188,6 +245,22 @@ class Delay:
 
     ##############################################
 
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+
+    ##############################################
+
+    @classmethod
+    def validate(cls, value) -> 'Delay':
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, float):
+            return cls(minutes=value)
+        raise TypeError()
+
+    ##############################################
+
     def __init__(self, hours: int=0, minutes: int=0) -> None:
         self._minutes = int(hours * 60 + minutes)
 
@@ -196,3 +269,9 @@ class Delay:
     @property
     def minutes(self) -> int:
         return self._minutes
+
+    ##############################################
+
+    def to_json(self):
+        # Fixme: [±]P[DD]DT[HH]H[MM]M[SS]S (ISO 8601 format for timedelta)
+        return self.minutes

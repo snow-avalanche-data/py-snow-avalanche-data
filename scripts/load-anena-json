@@ -57,7 +57,8 @@ attribute_title = {
 
 print('Create histograms')
 histograms = {}
-for attribute, type_ in Accident.ATTRIBUTE_TYPE.items():
+for attribute in Accident.__fields__:
+    type_ = Accident.field_type(attribute)
     title = attribute_title.get(attribute, attribute.replace('_', ' '))
     unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
     if issubclass(type_, Enum):

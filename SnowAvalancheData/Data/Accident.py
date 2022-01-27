@@ -35,56 +35,69 @@ __all__ = [
 
 from enum import Enum
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, ClassVar, Optional, List
 import datetime
+import os
+
 import json
+# Faster implementation
+# https://github.com/ultrajson/ultrajson
+# import ujson
+# https://github.com/ijl/orjson
+
+from pydantic import BaseModel
 
 from .DataType import *
 
 ####################################################################################################
 
-class Accident:
+class Accident(BaseModel):
+    activity: Optional[Activity] = None
+    altitude: Optional[int] = None
+    injured: Optional[int] = None
+    bra_level: Optional[int] = None
+    start_reason: Optional[StartReason] = None
+    code: str
+    snow_cohesion: Optional[SnowCohesion] = None
+    comment: Optional[str] = None
+    city: Optional[str] = None
+    coordinate: Optional[Coordinate] = None
+    date: Optional[datetime.datetime] = None
+    dead: Optional[int] = None
+    rescue_delay: Optional[Delay] = None
+    height_difference: Optional[int] = None
+    departement: Optional[int] = None
+    carried_away: Optional[int] = None
+    gear: Optional[Gear] = None
+    partial_bluried_critical: Optional[int] = None
+    partial_bluried_non_critical: Optional[int] = None
+    head_bluried: Optional[int] = None
+    full_bluried: Optional[int] = None
+    thickness_max: Optional[int] = None
+    move_direction: Optional[MoveDirection] = None
+    number_of_persons: Optional[int] = None
+    inclination: Optional[Inclination] = None
+    safe: Optional[int] = None
+    width: Optional[int] = None
+    length: Optional[int] = None
+    mountain_area: Optional[str] = None
+    alert_device: Optional[AlertDevice] = None
+    orientation: Optional[Orientation] = None
+    alert_person: Optional[AlertPerson] = None
+    doctor_on_site: Optional[bool] = None
+    snow_quality: Optional[SnowQuality] = None
+    location: Optional[str] = None
+    start_type: Optional[StartType] = None
 
-    ATTRIBUTE_TYPE = {
-        'activity': Activity,
-        'altitude': int,
-        'injured': int,
-        'bra_level': int,
-        'start_reason': StartReason,
-        'code': str,
-        'snow_cohesion': SnowCohesion,
-        'comment': str,
-        'city': str,
-        'coordinate': Coordinate,
-        'date': datetime.datetime,
-        'dead': int,
-        'rescue_delay': float,
-        'height_difference': int,
-        'departement': int,
-        'carried_away': int,
-        'gear': Gear,
-        'partial_bluried_critical': int,
-        'partial_bluried_non_critical': int,
-        'head_bluried': int,
-        'full_bluried': int,
-        'thickness_max': int,
-        'move_direction': MoveDirection,
-        'number_of_persons': int,
-        'inclination': Inclination,
-        'safe': int,
-        'width': int,
-        'length': int,
-        'mountain_area': str,
-        'alert_device': AlertDevice,
-        'orientation': Orientation,
-        'alert_person': AlertPerson,
-        'doctor_on_site': bool,
-        'snow_quality': SnowQuality,
-        'location': str,
-        'start_type': StartType,
-    }
+    class Config:
+        json_encoders = {
+            Coordinate: Coordinate.to_json,
+            Delay: Delay.to_json,
+            Enum: EnumMixin.to_json,
+            Inclination: Inclination.to_json,
+        }
 
-    ATTRIBUTE_DOC = {
+    ATTRIBUTE_DOC: ClassVar = {
         'activity': 'activity of the persons during the accident',
         'altitude': 'altitude',
         'injured': 'number of injured persons',
@@ -123,7 +136,7 @@ class Accident:
         'start_type': 'type of avalanche start',
     }
 
-    ATTRIBUTE_UNIT = {
+    ATTRIBUTE_UNIT: ClassVar = {
         'altitude': 'm',
         'rescue_delay': 'min',
         'height_difference': 'm',
@@ -148,49 +161,30 @@ class Accident:
     ##############################################
 
     @classmethod
-    def from_json(cls, data: dict) -> 'Accident':
-        kwargs = {}
-        for key, value in data.items():
-            if value is not None:
-                value_cls = cls.ATTRIBUTE_TYPE[key]
-                if value_cls is Coordinate:
-                    if isinstance(value, str):
-                        value = Coordinate(value=value)
-                    else:
-                        value = Coordinate(**value)
-                elif value_cls is datetime.datetime:
-                    value = datetime.datetime.fromisoformat(value)
-                elif value_cls is Delay:
-                    value = Delay(minutes=value)
-                elif issubclass(value_cls, Enum):
-                    value = getattr(value_cls, value.upper())
-                else:
-                    value = value_cls(value)
-            kwargs[key] = value
-        return cls(**kwargs)
+    def field_type(cls, attribute: str):
+        return cls.__fields__[attribute].type_
+
+####################################################################################################
+
+class AccidentList(BaseModel):
+
+    # https://pydantic-docs.helpmanual.io/usage/models/#custom-root-types
+    __root__: List[Accident]
 
     ##############################################
 
-    def __init__(self, **kwargs: dict) -> None:
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+    def __len__(self) -> int:
+        return len(self.__root__)
 
-    ##############################################
+    def __iter__(self) -> Iterator[Accident]:
+        return iter(self.__root__)
 
-    @property
-    def week(self) -> int:
-        return self.date.isocalendar().week
-
-    ##############################################
-
-    def to_json(self) -> dict:
-        return self.__dict__
+    def __getitem__(self, item) -> Accident:
+        return self.__root__[item]
 
 ####################################################################################################
 
 class Accidents:
-
-    JSON_ENCODER = None
 
     ##############################################
 
@@ -200,7 +194,7 @@ class Accidents:
             data = json.load(fh)
         accidents = cls()
         for accident_data in data:
-            accidents += Accident.from_json(accident_data)
+            accidents += Accident.parse_obj(accident_data)
         return accidents
 
     ##############################################
@@ -216,6 +210,9 @@ class Accidents:
     def __iter__(self) -> Iterator[Accident]:
         return iter(self._items)
 
+    def __getitem__(self, i: int) -> Accident:
+        return self._items[i]
+
     ##############################################
 
     # | 'Accidents'
@@ -229,21 +226,19 @@ class Accidents:
 
     ##############################################
 
-    def to_json(self) -> list:
-        return [_.to_json() for _ in self]
-
-    ##############################################
-
     def write_json(self, path: Path) -> None:
         with open(path, 'w') as fh:
-            data = json.dumps(
-                self.to_json(),
-                cls=self.JSON_ENCODER,
+            dumps_kwargs = dict(
                 indent=4,
                 ensure_ascii=False,
                 sort_keys=True,
             )
-            fh.write(data)
+            data = [_.dict() for _ in self]
+            # See pydantic/main.py
+            # https://github.com/samuelcolvin/pydantic/issues/675
+            # https://github.com/romis2012/pydantic-collections
+            _ = Accident.__config__.json_dumps(data, default=Accident.__json_encoder__, **dumps_kwargs)
+            fh.write(_)
 
     ##############################################
 

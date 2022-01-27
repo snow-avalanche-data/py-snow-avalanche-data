@@ -47,9 +47,10 @@ import re
 # import pandas as pd   # requires xlrd
 import xlrd
 
+from SnowAvalancheData.Data import Accident as DataAccident
+from SnowAvalancheData.Data import Accidents
 from SnowAvalancheData.Data import DataType
 from SnowAvalancheData.Data.DataType import Delay, Inclination
-from SnowAvalancheData.Data import Accident as DataAccident
 
 ####################################################################################################
 
@@ -276,12 +277,6 @@ class Coordinate:
 
     ##############################################
 
-    # @classmethod
-    # def format(cls, value) -> str:
-    #     return f'{value}'
-
-    ##############################################
-
     def to_json(self) -> dict:
         if self._longitude:
             return {'longitude': self._longitude, 'latitude': self._latidude}
@@ -290,53 +285,57 @@ class Coordinate:
 
 ####################################################################################################
 
-class Accident(DataAccident.Accident):
+class Accident(DataAccident):
 
     _MAP = {}
-    for keys, attribute, cls in (
-        (('activité', 'activité récréative'), 'activity', Activity),
-        ('altitude', 'altitude', int),
-        ('blessées', 'injured', int),
-        ('BRA', 'bra_level', int),
-        ('cause départ', 'start_reason', StartReason),
-        ('code accident', 'code', str),
-        (('cohésion neige', 'cohésion'), 'snow_cohesion', SnowCohesion),
-        ('commentaires', 'comment', str),
-        ('commune', 'city', str),
-        (('coordonnées zone départ', 'coordonnées ZD'), 'coordinate', Coordinate),
-        ('date', 'date', str),   # to datetime later
-        (('décédés', 'décédées'), 'dead', int),
-        ('délai intervention', 'rescue_delay', float),
-        (('dénivelé (mètres)', 'dénivelé'), 'height_difference', int),
-        ('département', 'departement', int),
-        (('emportés', 'emportées'), 'carried_away', int),
-        ('engin progression', 'gear', Gear),
-        ('ensevelis partiels critiques', 'partial_bluried_critical', int),
-        ('ensevelis partiels non critiques', 'partial_bluried_non_critical', int),
-        ('ensevelis tête', 'head_bluried', int),
-        (('ensevelis total', 'enseveli total'), 'full_bluried', int),
-        (('épaisseur cassure max. (cm)', 'hauteur maxi cassure'), 'thickness_max', int),
-        ('évolution', 'move_direction', MoveDirection),
-        ('groupe', 'number_of_persons', int),
-        ('heure', 'hour', str),     # to datetime later
-        (('inclinaison', 'inclinaison échelle'), 'inclination', Inclination),
-        (('indemnes', 'indemne'), 'safe', int),
-        (('largeur cassure (mètres)', 'largeur cassure'), 'width', int),
-        ('longueur coulée', 'length', int),
-        ('massif', 'mountain_area', str),
-        ('moyen alerte', 'alert_device', AlertDevice),
-        (('orientation', 'exposition'), 'orientation', Orientation),
-        ('personne alerte', 'alert_person', AlertPerson),
-        ('présence médecin', 'doctor_on_site', bool),
-        (('qualité neige', 'TEL'), 'snow_quality', SnowQuality),
-        ('site', 'location', str),
-        ('type départ', 'start_type', StartType),
-    ):
-        if isinstance(keys, str):
-            keys = (keys,)
-        _ = (attribute, cls)
-        for key in keys:
-            _MAP[key] = _
+
+    # Due to pydantic internals, local are picked up as field model...
+    @classmethod
+    def init(cls):
+        for keys, attribute, attribute_cls in (
+            (('activité', 'activité récréative'), 'activity', Activity),
+            ('altitude', 'altitude', int),
+            ('blessées', 'injured', int),
+            ('BRA', 'bra_level', int),
+            ('cause départ', 'start_reason', StartReason),
+            ('code accident', 'code', str),
+            (('cohésion neige', 'cohésion'), 'snow_cohesion', SnowCohesion),
+            ('commentaires', 'comment', str),
+            ('commune', 'city', str),
+            (('coordonnées zone départ', 'coordonnées ZD'), 'coordinate', Coordinate),
+            ('date', 'date', str),   # to datetime later
+            (('décédés', 'décédées'), 'dead', int),
+            ('délai intervention', 'rescue_delay', float),
+            (('dénivelé (mètres)', 'dénivelé'), 'height_difference', int),
+            ('département', 'departement', int),
+            (('emportés', 'emportées'), 'carried_away', int),
+            ('engin progression', 'gear', Gear),
+            ('ensevelis partiels critiques', 'partial_bluried_critical', int),
+            ('ensevelis partiels non critiques', 'partial_bluried_non_critical', int),
+            ('ensevelis tête', 'head_bluried', int),
+            (('ensevelis total', 'enseveli total'), 'full_bluried', int),
+            (('épaisseur cassure max. (cm)', 'hauteur maxi cassure'), 'thickness_max', int),
+            ('évolution', 'move_direction', MoveDirection),
+            ('groupe', 'number_of_persons', int),
+            ('heure', 'hour', str),     # to datetime later
+            (('inclinaison', 'inclinaison échelle'), 'inclination', Inclination),
+            (('indemnes', 'indemne'), 'safe', int),
+            (('largeur cassure (mètres)', 'largeur cassure'), 'width', int),
+            ('longueur coulée', 'length', int),
+            ('massif', 'mountain_area', str),
+            ('moyen alerte', 'alert_device', AlertDevice),
+            (('orientation', 'exposition'), 'orientation', Orientation),
+            ('personne alerte', 'alert_person', AlertPerson),
+            ('présence médecin', 'doctor_on_site', bool),
+            (('qualité neige', 'TEL'), 'snow_quality', SnowQuality),
+            ('site', 'location', str),
+            ('type départ', 'start_type', StartType),
+        ):
+            if isinstance(keys, str):
+                keys = (keys,)
+            _ = (attribute, attribute_cls)
+            for key in keys:
+                cls._MAP[key] = _
 
     ##############################################
 
@@ -373,6 +372,10 @@ class Accident(DataAccident.Accident):
         print("Column values:")
         for name in sorted(cls.column_values.keys()):
             print(name, cls.column_values[name])
+
+    ##############################################
+
+Accident.init()
 
 ####################################################################################################
 
@@ -430,31 +433,12 @@ class AccidentSheetContextManager:
             # datetime.timedelta
             kwargs['rescue_delay'] = Delay(hours=hours, minutes=minutes)
 
+        coordinate = kwargs['coordinate']
+        if coordinate:
+            kwargs['coordinate'] = coordinate.to_json()
+
         # pprint(kwargs)
         return Accident(**kwargs)
-
-####################################################################################################
-
-class AccidentEncoder(json.JSONEncoder):
-    def default(self, obj):
-        match obj:
-            case Coordinate():
-                return obj.to_json()
-            case datetime.datetime():
-                return obj.isoformat()
-            case Delay():
-                return obj.minutes
-            case Enum():
-                return MappedEnum.to_json(obj)
-            case Inclination():
-                return str(obj)
-            case _:
-                return json.JSONEncoder.default(self, obj)
-
-####################################################################################################
-
-class Accidents(DataAccident.Accidents):
-    JSON_ENCODER = AccidentEncoder
 
 ####################################################################################################
 
