@@ -3,3 +3,14 @@ numpy>=1.22
 pandas>=1.3.4
 pydantic>=1.9.0
 xlrd>=2.0
+
+# Automate tasks
+invoke
+
+# Check code style, errors, etc
+pylint
+flake8
+
+# Test runners
+pytest
+tox
