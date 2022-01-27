@@ -172,6 +172,61 @@ class Accident(BaseModel):
             return None
         return self.rescue_delay.minutes
 
+    ##############################################
+
+    def _ratio(self, value: int | None) -> float:
+        if value is None or self.number_of_persons is None:
+            return None
+        return value / self.number_of_persons * 100
+
+    ##############################################
+
+    # Fixme: cache ??? __getattr__ ???
+
+    @property
+    def ratio_injured(self) -> float:
+        return self._ratio(self.injured)
+
+    @property
+    def ratio_dead(self) -> float:
+        return self._ratio(self.dead)
+
+    @property
+    def ratio_carried_away(self) -> float:
+        return self._ratio(self.carried_away)
+
+    @property
+    def ratio_partial_bluried_critical(self) -> float:
+        return self._ratio(self.partial_bluried_critical)
+
+    @property
+    def ratio_partial_bluried_non_critical(self) -> float:
+        return self._ratio(self.partial_bluried_non_critical)
+
+    @property
+    def ratio_head_bluried(self) -> float:
+        return self._ratio(self.head_bluried)
+
+    @property
+    def ratio_full_bluried(self) -> float:
+        return self._ratio(self.full_bluried)
+
+    @property
+    def ratio_safe(self) -> float:
+        return self._ratio(self.safe)
+
+    ##############################################
+
+    @property
+    def area(self) -> float:
+        if self.length is not None and self.width is not None:
+            return self.length * self.width
+
+    @property
+    def volume(self) -> float:
+        if self.area is not None and self.thickness_max is not None:
+            return self.area * self.thickness_max / 100
+
 ####################################################################################################
 
 class AccidentList(BaseModel):

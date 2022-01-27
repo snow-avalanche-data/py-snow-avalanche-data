@@ -105,10 +105,10 @@ for accident in filtered_accidents:
         if value is not None:
             histogram.fill(value)
             if attribute in ratio_attributes:
-                N = getattr(accident, 'number_of_persons')
-                if N is not None:
+                value = getattr(accident, f'ratio_{attribute}')
+                if value is not None:
                     ratio_histogram = ratio_histograms[attribute]
-                    ratio_histogram.fill(value/N*100)
+                    ratio_histogram.fill(value)
 
 for attribute, histogram in histograms.items():
     histogram.normalise(to_percent=True, clone=False)
