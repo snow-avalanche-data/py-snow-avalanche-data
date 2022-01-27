@@ -26,7 +26,7 @@ from pathlib import Path
 from pprint import pprint
 import json
 
-from SnowAvalancheData.Import.Serac.C2cApi import Client, ClientLogin, SearchSettings
+from SnowAvalancheData.Importer.Serac.C2cApi import Client, ClientLogin, SearchSettings
 
 ####################################################################################################
 

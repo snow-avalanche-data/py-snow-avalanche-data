@@ -25,7 +25,7 @@
 from pathlib import Path
 from pprint import pprint
 
-from SnowAvalancheData.Import.Serac import SeracQuery
+from SnowAvalancheData.Importer.Serac import SeracQuery
 
 ####################################################################################################
 
