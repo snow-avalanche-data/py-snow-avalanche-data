@@ -277,11 +277,11 @@ class NDMixin:
     ##############################################
 
     @property
-    def x(self):
+    def x(self) -> Binning1D:
         return self._objs[0]
 
     @property
-    def y(self):
+    def y(self) -> Binning1D:
         return self._objs[1]
 
     @property
@@ -293,10 +293,10 @@ class NDMixin:
     def __len__(self) -> int:
         return len(self._objs)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Binning1D]:
         return iter(self._objs)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i) -> Binning1D:
         return self._objs[i]
 
 ####################################################################################################
@@ -305,7 +305,7 @@ class BinningND(NDMixin):
 
     ##############################################
 
-    def find_bin(self, *args):
+    def find_bin(self, *args) -> tuple[int]:
         # Numpy index must be a tuple
         return tuple([binning.find_bin(x) for binning, x in zip(self, args)])
 

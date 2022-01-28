@@ -29,6 +29,7 @@ TODO: give a look at https://pydantic-docs.helpmanual.io
 __all__ = [
     'Accident',
     'AccidentRegister',
+    'AccidentDataFrame',
 ]
 
 ####################################################################################################
@@ -145,6 +146,8 @@ class Accident(BaseModel):
         'inclination': 'degree',
         'width': 'm',
         'length': 'm',
+        'area': 'm2',
+        'volume': 'm3',
     }
     for _ in (
         'injured',

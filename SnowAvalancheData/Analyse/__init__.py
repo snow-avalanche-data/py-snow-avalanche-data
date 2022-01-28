@@ -25,10 +25,15 @@ import logging
 
 import matplotlib.pyplot as plt
 
-from SnowAvalancheData.Data import AccidentRegister, Accident
+from SnowAvalancheData.Data import AccidentRegister, Accident, AccidentDataFrame
 from SnowAvalancheData.Data.DataType import *
 from SnowAvalancheData.Plot import Figure
-from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
+from SnowAvalancheData.Statistics.Histogram import (
+    Histogram,
+    Histogram2D,
+    EnumHistogram,
+    Binning1D, Interval, BinningND,
+)
 
 ####################################################################################################
 
@@ -47,6 +52,8 @@ class Analysis:
         'rescue_delay': 20,   # min
         'thickness_max': 20,   # cm
         'width': 15,   # m
+        'area': 2000,   # m2
+        'volume': 2000,   # m3
     }
 
     ATTRIBUTE_TITLE = {
@@ -73,6 +80,7 @@ class Analysis:
         self.create_histograms()
         self.fill_histograms()
         self.post_process_histograms()
+        self.dumo_histograms()
         # self.plot()
 
     ##############################################
@@ -87,11 +95,22 @@ class Analysis:
         self.filtered_accidents = self.accidents.and_filter(
             activity=lambda _: _ in (Activity.HIKING, Activity.MOUNTAINEERING),
         )
+        self.data_frame = AccidentDataFrame(self.filtered_accidents)
 
     ##############################################
 
     def create_histograms(self) -> None:
         self._logger.info('Create histograms')
+
+        def create_histogram(attribute: str, title: str, unit: str) -> None:
+            self._logger.info(f'  Scan inf/sup for {attribute}')
+            getter_attribute = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
+            inf, sup = self.filtered_accidents.inf_sup(getter_attribute)
+            sup += 1
+            bin_width = self.ATTRIBUTE_BIN_WIDTH.get(attribute, 1)
+            self._logger.info(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
+            self.histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
+
         self.histograms = {}
         for attribute, type_ in Accident.attribute_types():
             title = self.ATTRIBUTE_TITLE.get(attribute, attribute.replace('_', ' '))
@@ -99,13 +118,7 @@ class Analysis:
             if issubclass(type_, Enum):
                 self.histograms[attribute] = EnumHistogram(type_, title=title, unit=unit)
             elif type_ in (int, float, Delay):
-                self._logger.info(f'  Scan inf/sup for {attribute}')
-                _ = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
-                inf, sup = self.filtered_accidents.inf_sup(_)
-                sup += 1
-                bin_width = self.ATTRIBUTE_BIN_WIDTH.get(attribute, 1)
-                self._logger.info(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
-                self.histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
+                create_histogram(attribute, title, unit)
 
         self.ratio_histograms = {}
         for attribute in Accident.RATIO_ATTRIBUTES:
@@ -117,16 +130,37 @@ class Analysis:
             bin_width = 10
             self.ratio_histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
 
+        for attribute in ('area', 'volume'):
+            title = attribute
+            unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
+            create_histogram(attribute, title, unit)
+
+        self.histograms_2d = {}
+        for x_attribute, y_attribute in (
+                ('number_of_persons','carried_away'),
+        ):
+            name = f'{x_attribute}/{y_attribute}'
+            title = f'{y_attribute}/{x_attribute}'
+            # binning = [self.histograms[_].binning.clone() for _ in (x_attribute, y_attribute)]
+            binning = [
+                Binning1D(Interval(0, 11), bin_width=1),
+                Binning1D(Interval(0, 11), bin_width=1),
+            ]
+            self.histograms_2d[name] = Histogram2D(
+                binning=BinningND(*binning),
+                title=title,
+            )
+
     ##############################################
 
     def fill_histograms(self) -> None:
         self._logger.info('Fill histograms')
         # Fixme: also impl vectorize / vs cpu ram
         for accident in self.filtered_accidents:
-            # pself._logger.info(accident.__dict__)
+            # self._logger.info(accident.__dict__)
             for attribute, histogram in self.histograms.items():
-                _ = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
-                value = getattr(accident, _)
+                getter_attribute = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
+                value = getattr(accident, getter_attribute)
                 if value is not None:
                     histogram.fill(value)
                     if attribute in Accident.RATIO_ATTRIBUTES:
@@ -134,6 +168,11 @@ class Analysis:
                         if value is not None:
                             ratio_histogram = self.ratio_histograms[attribute]
                             ratio_histogram.fill(value)
+            for attribute, histogram in self.histograms_2d.items():
+                attributes = attribute.split('/')
+                values = [_ for _ in [getattr(accident, _) for _ in attributes] if _ is not None]
+                if len(values) == len(attributes):
+                    histogram.fill(*values)
 
     ##############################################
 
@@ -144,10 +183,12 @@ class Analysis:
     ##############################################
 
     def dumo_histograms(self) -> None:
-        for attribute, histogram in self.histograms.items():
-                self._logger.info("="*100)
-                self._logger.info(attribute)
-                self._logger.info(histogram)
+        # for attribute, histogram in self.histograms.items():
+        #         self._logger.info("="*100)
+        #         self._logger.info(attribute)
+        #         self._logger.info(histogram)
+        for histogram in self.histograms_2d.values():
+            print(histogram)
 
     ##############################################
 
@@ -194,13 +235,16 @@ class Analysis:
         ):
                 plot_histogram(figure, attribute)
 
-        with Figure('figure3', number_of_rows=2, number_of_columns=2, figure_size=figure_size) as figure:
+        with Figure('figure3', number_of_rows=2, number_of_columns=3, figure_size=figure_size) as figure:
             for attribute in (
                     'length',
                     'width',
                     #
                     'height_difference',
                     'thickness_max',
+                    #
+                    'area',
+                    'volume',
             ):
                 plot_histogram(figure, attribute)
 
@@ -245,6 +289,14 @@ class Analysis:
                     # 'doctor_on_site',
             ):
                 plot_histogram(figure, attribute)
+
+        with Figure('figure7', number_of_rows=1, number_of_columns=2, figure_size=figure_size) as figure:
+            for attribute in (
+                    ('number_of_persons', 'carried_away'),
+            ):
+                name = '/'.join(attribute)
+                histogram = self.histograms_2d[name]
+                figure.box_plot(histogram, title=attribute)
 
     ##############################################
 

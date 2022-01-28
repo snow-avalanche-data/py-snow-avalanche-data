@@ -31,6 +31,7 @@ __all__ = [
 
 from enum import Enum, auto
 import math
+import os
 
 import numpy as np
 
@@ -705,13 +706,14 @@ Histogram 1D: {self._title}
             accumulator = self._accumulator[i]
             if accumulator == 0:
                 continue
-            text += '%3u %s %s = %g +- %g\n' % (
+            text += '%3u %s %s = %g +- %g' % (
                 i,
                 self.bin_label(i),
                 str(binning.bin_interval(i)),
                 accumulator,
                 self.get_bin_error(i),
             )
+            text += os.linesep
         return text
 
 ####################################################################################################
@@ -801,14 +803,42 @@ class Histogram2D(Histogram):
 
     ##############################################
 
-    def __init__(self, binning: BinningND) -> None:
+    def __init__(self, binning: BinningND, **kwargs) -> None:
         if isinstance(binning, BinningND) and binning.dimension == 2:
             self._binning = binning
         else:
             raise ValueError
-
+        self._title = str(kwargs.get('title', ''))
+        # self._y_unit = None
         array_size = [binning.array_size for binning in self._binning]
         self._make_array(array_size)
         self.data_set_moment = DataSetMomentND(dimension=2)
 
         # self.clear_feature()
+
+   ###############################################
+
+    def __str__(self):
+        binning = self._binning
+        text = f"""
+Histogram 2D: {self._title}
+"""
+        # unit: {self._unit}
+        # y_unit: {self._y_unit}
+        # interval: {binning._interval}
+        # number of bins: {binning._number_of_bins}
+        # bin width: {binning._bin_width:g}
+        for i in binning.x.bin_iterator(xflow=True):
+            for j in binning.y.bin_iterator(xflow=True):
+                accumulator = self._accumulator[i][j]
+                if accumulator == 0:
+                    continue
+                text += np.array2string(accumulator, separator=',')
+                # text += '%3u %3u %s %s = %g +- %g\n' % (
+                #     i, j,
+                #     self.bin_label(i),
+                #     str(binning.bin_interval(i)),
+                #     accumulator,
+                #     self.get_bin_error(i),
+                # )
+        return text

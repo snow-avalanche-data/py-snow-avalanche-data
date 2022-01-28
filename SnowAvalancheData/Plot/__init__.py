@@ -27,7 +27,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from SnowAvalancheData.Statistics.Histogram import EnumHistogram, Histogram
+from SnowAvalancheData.Statistics.Histogram import EnumHistogram, Histogram, Histogram2D
 
 ####################################################################################################
 
@@ -206,34 +206,31 @@ class Figure:
 
     ##############################################
 
-    def box_plot(self, histogram: Histogram, title: str, axe: list=None) -> None:
+    def box_plot(self, histogram: Histogram2D, title: str, axe: list=None) -> None:
         """Also called Hinton diagram"""
+        ax = self._get_axe(axe)
+        if np.min(histogram.accumulator) < 0:
+            raise ValueError("Bin contents must be positive")
 
-        # Return the current axes, creating one if necessary
-        # axes = axes if axes is not None else plt.gca()
+        # Set bin content to a normalised square area
+        accumulator_view = histogram.accumulator[1:-1,1:-1]
+        accumulator = np.sqrt(accumulator_view / np.max(accumulator_view))
+        # Add margin
+        accumulator *= .90
 
-        # if np.min(self._accumulator) < 0:
-        #     raise ValueError("Bin contents must be positive")
+        for (x, y), size in np.ndenumerate(accumulator):
+            rectangle = plt.Rectangle([x - size / 2, y - size / 2], size, size,
+                                 edgecolor='black', facecolor='white')
+            ax.add_patch(rectangle)
 
-        # # Set bin content to a normalised square area
-        # accumulator_view = self._accumulator[1:-1,1:-1]
-        # accumulator = np.sqrt(accumulator_view / np.max(accumulator_view))
-        # # Add margin
-        # accumulator *= .90
-
-        # for (x, y), size in np.ndenumerate(accumulator):
-        #     rect = plt.Rectangle([x - size / 2, y - size / 2], size, size,
-        #                          edgecolor='black', facecolor='white')
-        #     axes.add_patch(rect)
-
-        # axes.set_aspect('equal', 'box')
-        # x_size, y_size = accumulator_view.shape
-        # axes.set_xlim(-.5, x_size)
-        # axes.set_ylim(-.5, y_size)
-        # labels = [str(x) for x in self._binning.x.bin_centers]
-        # plt.xticks(np.arange(x_size) +.5, labels, rotation='vertical')
-        # labels = [str(x) for x in self._binning.y.bin_centers]
-        # plt.yticks(np.arange(y_size) +.5, labels)
+        ax.set_aspect('equal', 'box')
+        x_size, y_size = accumulator_view.shape
+        ax.set_xlim(-.5, x_size)
+        ax.set_ylim(-.5, y_size)
+        labels = [str(x) for x in histogram.binning.x.bin_centers()]
+        ax.set_xticks(np.arange(x_size) +.5, labels, rotation='vertical')
+        labels = [str(x) for x in histogram.binning.y.bin_centers()]
+        ax.set_yticks(np.arange(y_size) +.5, labels)
 
     ##############################################
 
