@@ -1,6 +1,6 @@
 ####################################################################################################
 #
-# SnowAvalancheData - 
+# SnowAvalancheData -
 # Copyright (C) 2022 Fabrice Salvaire
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,31 +18,18 @@
 #
 ####################################################################################################
 
-# http://www.pyinvoke.org
+####################################################################################################
+
+from pathlib import Path
+
+from invoke import task
 
 ####################################################################################################
 
-from invoke import task, Collection
-
-####################################################################################################
-
-from . import anena
-from . import clean
-from . import jupyter
-
-# from . import doc
-# from . import git
-# from . import github
-# from . import release
-# from . import test
-
-ns = Collection()
-ns.add_collection(Collection.from_module(anena))
-ns.add_collection(Collection.from_module(clean))
-ns.add_collection(Collection.from_module(jupyter))
-
- # ns.add_collection(Collection.from_module(doc))
-# ns.add_collection(Collection.from_module(git))
-# ns.add_collection(Collection.from_module(github))
-# ns.add_collection(Collection.from_module(release))
-# ns.add_collection(Collection.from_module(test))
+@task
+def clean_notebook(ctx):
+    source_path = Path(__file__).parents[1]
+    notebooks = source_path.joinpath('notebooks').glob('*.ipynb')
+    for path in notebooks:
+        print(f'Clear output of {path}')
+        ctx.run(f'jupyter nbconvert --clear-output --inplace {path}')
