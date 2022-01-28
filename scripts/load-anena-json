@@ -20,200 +20,24 @@
 #
 ####################################################################################################
 
-from enum import Enum
+####################################################################################################
+
 from pathlib import Path
-from pprint import pprint
 
 import matplotlib.pyplot as plt
 
-from SnowAvalancheData.Data import AccidentRegister, Accident
-from SnowAvalancheData.Data.DataType import *
-from SnowAvalancheData.Plot import Figure
-from SnowAvalancheData.Statistics.Histogram import Histogram, EnumHistogram, Binning1D, Interval
+from SnowAvalancheData.Analyse import Analysis
 
 ####################################################################################################
 
-path = Path('data').joinpath('anena-accidents.json')
-print(f'Load {path}')
-accidents = AccidentRegister.load_json(path)
-
-filtered_accidents = accidents.and_filter(
-    activity=lambda _: _ in (Activity.HIKING, Activity.MOUNTAINEERING),
-)
-
-attribute_bin_width = {
-    'altitude': 250,   # m
-    'height_difference': 100,   # m
-    'length': 100,   # m
-    'rescue_delay': 20,   # min
-    'thickness_max': 20,   # cm
-    'width': 15,   # m
-}
-
-attribute_title = {
-    'orientation': 'Slope Orientation',
-    'move_direction': 'Moving Direction',
-}
-
-attribute_mapper = {
-    'rescue_delay': 'rescue_delay_minutes',
-}
-
-print('Create histograms')
-histograms = {}
-for attribute, type_ in Accident.attribut_types:
-    title = attribute_title.get(attribute, attribute.replace('_', ' '))
-    unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
-    if issubclass(type_, Enum):
-        histograms[attribute] = EnumHistogram(type_, title=title, unit=unit)
-    elif type_ in (int, float, Delay):
-        print(f'  Scan inf/sup for {attribute}')
-        _ = attribute_mapper.get(attribute, attribute)
-        inf, sup = filtered_accidents.inf_sup(_)
-        sup += 1
-        bin_width = attribute_bin_width.get(attribute, 1)
-        print(f'{attribute} [{inf}, {sup}] bw = {bin_width}')
-        histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
-
-ratio_histograms = {}
-for attribute in ACCIDENT.RATIO_ATTRIBUTES:
-    title = f'ratio {histograms[attribute].title}'
-    unit = 'percent'
-    inf = 0
-    sup = 100
-    bin_width = 10
-    ratio_histograms[attribute] = Histogram(binning=Binning1D(Interval(inf, sup), bin_width=bin_width), title=title, unit=unit)
-
-print('Fill histograms')
-# Fixme: also impl vectorize / vs cpu ram
-for accident in filtered_accidents:
-    # pprint(accident.__dict__)
-    for attribute, histogram in histograms.items():
-        _ = attribute_mapper.get(attribute, attribute)
-        value = getattr(accident, _)
-        if value is not None:
-            histogram.fill(value)
-            if attribute in ratio_attributes:
-                value = getattr(accident, f'ratio_{attribute}')
-                if value is not None:
-                    ratio_histogram = ratio_histograms[attribute]
-                    ratio_histogram.fill(value)
-
-for attribute, histogram in histograms.items():
-    histogram.normalise(to_percent=True, clone=False)
-
-# for attribute, histogram in histograms.items():
-#     print("="*100)
-#     print(attribute)
-#     print(histogram)
+import SnowAvalancheData.Logging.Logging as Logging
+logger = Logging.setup_logging()
 
 ####################################################################################################
 
-print('Plot...')
-
-# histogram = histograms['bra_level']
-# print(histogram)
-# # print(histogram.to_graph())
-# c = histogram.normalise(scale=100)
-# print(c)
-# c = histogram.cumulative(normalise=False)
-# print(c)
-# c = histogram.cumulative(normalise=True)
-# print(c)
-
-def plot_histogram(figure, attribute):
-    histogram = histograms[attribute]
-    match attribute:
-        case 'bra_level' | 'departement':
-            figure.bar_number(histogram)
-        case 'orientation':
-            figure.polar_bar(histogram)
-        case _:
-            match histogram:
-               case EnumHistogram():
-                   figure.bar(histogram)
-               case Histogram():
-                   figure.histogram(histogram)
-
-with Figure('figure1', number_of_rows=2, number_of_columns=3) as figure:
-    for attribute in (
-            'activity',
-            'altitude',
-            'departement',   # -> map
-            # 'date',
-            'gear',
-    ):
-        plot_histogram(figure, attribute)
-
-with Figure('figure2', number_of_rows=2, number_of_columns=4) as figure:
-    for attribute in (
-            'bra_level',
-            'move_direction',
-            'orientation',
-            'snow_cohesion',
-            #
-            'snow_quality',
-            'start_reason',
-            'start_type',
-            # 'inclination',
-):
-        plot_histogram(figure, attribute)
-
-with Figure('figure3', number_of_rows=2, number_of_columns=2) as figure:
-    for attribute in (
-            'length',
-            'width',
-            #
-            'height_difference',
-            'thickness_max',
-    ):
-        plot_histogram(figure, attribute)
-
-with Figure('figure', number_of_rows=3, number_of_columns=4) as figure:
-    for attribute in (
-            'number_of_persons',
-            'safe',
-            'injured',
-            'dead',
-            #
-            'carried_away',
-            'partial_bluried_non_critical',
-            'partial_bluried_critical',
-            #
-            'head_bluried',
-            'full_bluried',
-    ):
-        plot_histogram(figure, attribute)
-
-with Figure('figure5', number_of_rows=3, number_of_columns=4) as figure:
-    for attribute in (
-            'safe',
-            'injured',
-            'dead',
-            #
-            'carried_away',
-            'partial_bluried_non_critical',
-            'partial_bluried_critical',
-            #
-            'head_bluried',
-            'full_bluried',
-    ):
-        # plot_histogram(figure, f'ratio_{attribute}')
-        figure.histogram(ratio_histograms[attribute])
-
-with Figure('figure6', number_of_rows=2, number_of_columns=2) as figure:
-    for attribute in (
-            'alert_device',
-            'alert_person',
-            #
-            'rescue_delay',
-            # 'doctor_on_site',
-    ):
-        plot_histogram(figure, attribute)
-
-# figures = {key: value for key, value in globals().items() if isinstance(value, Figure)}
-# for name, figure in figures.items():
-#     figure.save(f'{name}.svg')
+path = Analysis.relative_to_source('data', 'anena-accidents.json')
+analysis = Analysis(path)
+analysis.plot()
 
 print('Show...')
 plt.show()
