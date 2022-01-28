@@ -21,6 +21,7 @@
 ####################################################################################################
 
 from pathlib import Path
+from typing import Optional
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -49,17 +50,21 @@ class Figure:
                  name: str,
                  number_of_rows: int,
                  number_of_columns: int,
+                 figure_size: Optional[tuple[float, float]]=None,
                  ) -> None:
 
         self._name = str(name)
         self.POOL[self._name] = self
+
+        if figure_size is None:
+            figure_size = [self.mm2in(_) for _ in self.A5]
 
         # https://matplotlib.org/stable/tutorials/intermediate/constrainedlayout_guide.html
         # https://matplotlib.org/stable/tutorials/intermediate/tight_layout_guide.html
         self._figure, self._axes = plt.subplots(
             number_of_rows, number_of_columns,
             dpi=100,
-            figsize=[self.mm2in(_) for _ in self.A5],
+            figsize=figure_size,
             constrained_layout=True,
             # projection='polar',
             # layout='constrained',

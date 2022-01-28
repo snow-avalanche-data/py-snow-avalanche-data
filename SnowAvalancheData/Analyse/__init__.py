@@ -154,7 +154,7 @@ class Analysis:
     def plot(self) -> None:
         self._logger.info('Plot...')
 
-        # plt.rcParams["figure.figsize"]=15,8
+        figure_size = (15, 8)
 
         def plot_histogram(figure, attribute):
             histogram = self.histograms[attribute]
@@ -170,7 +170,7 @@ class Analysis:
                        case Histogram():
                            figure.histogram(histogram)
 
-        with Figure('figure1', number_of_rows=2, number_of_columns=3) as figure:
+        with Figure('figure1', number_of_rows=2, number_of_columns=3, figure_size=figure_size) as figure:
             for attribute in (
                     'activity',
                     'altitude',
@@ -180,7 +180,7 @@ class Analysis:
             ):
                 plot_histogram(figure, attribute)
 
-        with Figure('figure2', number_of_rows=2, number_of_columns=4) as figure:
+        with Figure('figure2', number_of_rows=2, number_of_columns=4, figure_size=figure_size) as figure:
             for attribute in (
                     'bra_level',
                     'move_direction',
@@ -194,7 +194,7 @@ class Analysis:
         ):
                 plot_histogram(figure, attribute)
 
-        with Figure('figure3', number_of_rows=2, number_of_columns=2) as figure:
+        with Figure('figure3', number_of_rows=2, number_of_columns=2, figure_size=figure_size) as figure:
             for attribute in (
                     'length',
                     'width',
@@ -204,7 +204,7 @@ class Analysis:
             ):
                 plot_histogram(figure, attribute)
 
-        with Figure('figure', number_of_rows=3, number_of_columns=4) as figure:
+        with Figure('figure', number_of_rows=3, number_of_columns=4, figure_size=figure_size) as figure:
             for attribute in (
                     'number_of_persons',
                     'safe',
@@ -220,7 +220,7 @@ class Analysis:
             ):
                 plot_histogram(figure, attribute)
 
-        with Figure('figure5', number_of_rows=3, number_of_columns=4) as figure:
+        with Figure('figure5', number_of_rows=3, number_of_columns=4, figure_size=figure_size) as figure:
             for attribute in (
                     'safe',
                     'injured',
@@ -236,7 +236,7 @@ class Analysis:
                 # plot_histogram(figure, f'ratio_{attribute}')
                 figure.histogram(self.ratio_histograms[attribute])
 
-        with Figure('figure6', number_of_rows=2, number_of_columns=2) as figure:
+        with Figure('figure6', number_of_rows=2, number_of_columns=2, figure_size=figure_size) as figure:
             for attribute in (
                     'alert_device',
                     'alert_person',
