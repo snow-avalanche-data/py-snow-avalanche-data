@@ -2,6 +2,10 @@
 
 This directory contains codes to implements statistical tools, like histogram.
 
+**Features**
+* implements these bin width algorithms: Freedman-Diaconis, Knuth, Scott
+  (Note: Bayesian blocks algorithm yields usually a too large bin width on our data)
+
 # Bibliography
 
 ## Histogram

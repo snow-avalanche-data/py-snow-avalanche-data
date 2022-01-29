@@ -34,6 +34,7 @@ from SnowAvalancheData.Statistics.Histogram import (
     EnumHistogram,
     Binning1D, Interval, BinningND,
 )
+from SnowAvalancheData.Statistics.BinningAlgorithm import knuth_bin_width
 
 ####################################################################################################
 
@@ -46,14 +47,14 @@ class Analysis:
     _logger = _module_logger.getChild('Analysis')
 
     ATTRIBUTE_BIN_WIDTH = {
-        'altitude': 250,   # m
-        'height_difference': 100,   # m
-        'length': 100,   # m
-        'rescue_delay': 20,   # min
-        'thickness_max': 20,   # cm
-        'width': 15,   # m
-        'area': 2000,   # m2
-        'volume': 2000,   # m3
+        'altitude': 250,   # m / 236
+        'area': 2000,   # m2 / 19_250
+        'height_difference': 100,   # m / 88
+        'length': 100,   # m / 181
+        'rescue_delay': 20,   # min / 43
+        'thickness_max': 20,   # cm / 18
+        'volume': 2000,   # m3 / 14_400
+        'width': 15,   # m / 24
     }
 
     ATTRIBUTE_TITLE = {
@@ -76,11 +77,11 @@ class Analysis:
     def __init__(self, path: Path) -> None:
         self.accidents = None
         self.load_data(path)
-        self.filter_data()
-        self.create_histograms()
-        self.fill_histograms()
-        self.post_process_histograms()
-        self.dumo_histograms()
+        # self.filter_data()
+        # self.create_histograms()
+        # self.fill_histograms()
+        # self.post_process_histograms()
+        # self.dump_histograms()
         # self.plot()
 
     ##############################################
@@ -96,6 +97,28 @@ class Analysis:
             activity=lambda _: _ in (Activity.HIKING, Activity.MOUNTAINEERING),
         )
         self.data_frame = AccidentDataFrame(self.filtered_accidents)
+
+    ##############################################
+
+    def compute_bin_width(self) -> None:
+        self._logger.info('Compute bin width histograms')
+
+        def compute(attribute):
+            getter_attribute = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
+            data = self.filtered_accidents.vectorise(getter_attribute)
+            bin_width = knuth_bin_width(data)
+            print(f'{attribute} {bin_width:.2f}')
+
+        for attribute, type_ in Accident.attribute_types():
+            if (attribute in ('number_of_persons', 'departement', 'bra_level')
+                or attribute in Accident.RATIO_ATTRIBUTES
+                ):
+                continue
+            if type_ in (int, float, Delay):
+                compute(attribute)
+
+        for attribute in ('area', 'volume'):
+            compute(attribute)
 
     ##############################################
 
