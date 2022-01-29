@@ -27,7 +27,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from SnowAvalancheData.Statistics.Histogram import EnumHistogram, Histogram, Histogram2D
+from SnowAvalancheData.Statistics.Histogram import EnumHistogram, Histogram, Histogram2D, UnitType
 
 ####################################################################################################
 
@@ -155,6 +155,12 @@ class Figure:
 
         ax.set_title(title or histogram.title)
         ax.set_xlabel(histogram.unit)
+        y_unit_map = {
+            UnitType.COUNT: '#',
+            UnitType.NORMALISED: '%',
+            UnitType.PERCENT: '%',
+        }
+        ax.set_ylabel(y_unit_map[histogram.y_unit])
         ax.grid(True)
 
         binning = histogram.binning
