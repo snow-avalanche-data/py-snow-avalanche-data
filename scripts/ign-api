@@ -35,4 +35,14 @@ logger = Logging.setup_logging()
 
 path = Path('secret', 'ign-api.json')
 ign_api = IgnApi.from_json_settings(path)
-print(ign_api.elevation(latitude=48.0551, longitude=0.2367))
+print(
+    ign_api.elevation(latitude=48.0551, longitude=0.2367)
+)
+print(
+    ign_api.elevation_line(
+        coordinates=[
+            (45.13735592, 5.86722018),
+            (45.10597431, 5.93640326),
+        ]
+    )
+)

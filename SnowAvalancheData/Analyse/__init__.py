@@ -304,3 +304,34 @@ class Analysis:
         figures = {key: value for key, value in globals().items() if isinstance(value, Figure)}
         for name, figure in figures.items():
             figure.save(f'{name}.svg')
+
+    ##############################################
+
+    def display_map(self) -> None:
+        # https://github.com/Leaflet/Leaflet.markercluster
+        # https://geoservices.ign.fr/documentation/services/utilisation-web/extension-pour-leaflet
+        from ipyleaflet import Map, Marker, MarkerCluster
+        from ipywidgets import Layout
+
+        center = (46 + 45/60, 2 + 25/60)
+        map_ = Map(
+            center=center,
+            zoom=4,
+            layout=Layout(width='100%', height='800px'),
+        )
+
+        markers = []
+        for accident in self.filtered_accidents:
+            coordinate = accident.coordinate
+            if coordinate is not None:
+                marker = Marker(
+                    location=(coordinate.latitude, coordinate.longitude),
+                    title=f'{accident.code}',
+                )
+                # print(f'{accident.code} {coordinate.latitude} {coordinate.longitude}')
+            markers.append(marker)
+        # Fixme: leaflet is buggy
+        marker_cluster = MarkerCluster(markers=markers)
+        map_.add_layer(marker_cluster)
+
+        return map_

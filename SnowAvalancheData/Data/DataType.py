@@ -253,6 +253,20 @@ class Coordinate:
 
     ##############################################
 
+    @property
+    def latitude(self) -> float:
+        return self._latitude
+
+    @property
+    def longitude(self) -> float:
+        return self._longitude
+
+    @property
+    def altitude(self) -> float:
+        return self._altitude
+
+    ##############################################
+
     def __repr__(self) -> str:
         return f"latitude: {self._latitude}, longitude: {self._longitude}, altitude: {self._altitude}"
 

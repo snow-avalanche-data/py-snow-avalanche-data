@@ -81,17 +81,43 @@ class IgnApi:
 
     ##############################################
 
-    def elevation(self, latitude: float, longitude: float) -> float:
-        url = f'{self.URL}/{self._api_key}/alti/rest/elevation.json'
+    def get(self, url: str, payload: dict) -> requests.request:
+        url = f'{self.URL}/{self._api_key}/{url}'
         headers = {
             'Origin': self._origin,
             'User-Agent': self._user_agent,
         }
+        r = requests.get(url, headers=headers, params=payload)
+        self._logger.info(r.url)
+        return r
+
+    ##############################################
+
+    def elevation(self, latitude: float, longitude: float) -> float:
+        url = 'alti/rest/elevation.json'
         payload = {
             'lat': latitude,
             'lon': longitude,
         }
-        r = requests.get(url, headers=headers, params=payload)
-        self._logger.info(r.url)
+        r = self.get(url, payload)
         data = r.json()
+        print(data)
         return data['elevations'][0]['z']
+
+    ##############################################
+
+    def elevation_line(self, coordinates: list[list[float, float]], sampling: int=200):
+        # https://wxs.ign.fr/an7nvfzojv5wa96dsga5nk8w/alti/rest/elevationLine.xml?gp-access-lib=3.0.3&lon=5.86722018|5.93640326&lat=45.13735592|45.10597431&indent=false&crs='CRS:84'&sampling=200
+        url = 'alti/rest/elevationLine.json'
+        def join_float(i):
+            return '|'.join([str(float(_[i])) for _ in coordinates])
+        payload = {
+            'lat': join_float(0),
+            'lon': join_float(1),
+            'indent': 'false',
+            'crs': 'CRS:84',
+            'sampling': str(int(sampling)),
+        }
+        r = self.get(url, payload)
+        data = r.json()
+        return data
