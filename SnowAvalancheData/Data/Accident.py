@@ -378,8 +378,13 @@ class AccidentRegisterMixin:
     ##############################################
 
     def vectorise(self, attribute: str) -> np.ndarray:
-        array = [getattr(self, attribute) for _ in self]
-        type_ = Accident.attribute_type(attribute)
+        array = [getattr(_, attribute) for _ in self]
+        array = [_ for _ in array if _ is not None]
+        try:
+            type_ = Accident.attribute_type(attribute)
+        except KeyError:
+            # Fixme: 
+            type_ = type(array[0])
         if type_ is int:
             dtype = np.int
         elif type_ is float:
