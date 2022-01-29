@@ -33,13 +33,17 @@ def xls_paths() -> list[Path]:
     xls_paths = Path('data', 'anena-xls').glob('tableau-accidents-*-*.xls')
     return sorted(xls_paths)
 
+####################################################################################################
+
 # for path in xls_paths[:-1]:
 #     book = AccidentBook(path)
 #     Accident.learn(book[0])
 # Accident.dump()
 
+####################################################################################################
+
 @task
-def to_json(ctx, json_path='anena-accidents.json'):
+def to_json(ctx, json_path='anena-accidents.json', fixes_path='data/anena-accidents-fixes.json'):
     accidents = AccidentRegister()
     for path in xls_paths():
         book = AccidentBook(path)
@@ -48,4 +52,15 @@ def to_json(ctx, json_path='anena-accidents.json'):
             accidents += book.to_accident_pre_2019()
     path = Path(json_path)
     print(f'Write {path}')
+    accidents.fix(fixes_path)
     accidents.write_json(path)
+
+####################################################################################################
+
+@task
+def check(ctx, json_path='anena-accidents.json'):
+    accidents = AccidentRegister.load_json(json_path)
+    for accident in accidents:
+        if not accident.check():
+            pprint(accident.dict())
+            print()

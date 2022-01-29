@@ -38,6 +38,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Iterator, ClassVar, Optional, List
 import datetime
+import logging
 import os
 
 import json
@@ -50,6 +51,10 @@ from pydantic import BaseModel
 import pandas as pd
 
 from .DataType import *
+
+####################################################################################################
+
+_module_logger = logging.getLogger(__name__)
 
 ####################################################################################################
 
@@ -169,9 +174,11 @@ class Accident(BaseModel):
         'partial_bluried_critical',
         'partial_bluried_non_critical',
         'head_bluried',
-            'full_bluried',
+        'full_bluried',
         'safe',
     )
+
+    _logger = _module_logger.getChild('Accident')
 
     ##############################################
 
@@ -201,6 +208,25 @@ class Accident(BaseModel):
             type_ = cls.attribute_type(attribute)
             if type_ in (int, float, Delay):
                 yield attribute
+
+    ##############################################
+
+    # def __init__(self, *args, **kwargs) -> None:
+    #     super().__init__(*args, **kwargs)
+    #     self.check()
+
+    ##############################################
+
+    def check(self) -> bool:
+        valid = True
+        number_of_persons = self.number_of_persons
+        if number_of_persons is not None:
+            for attribute in self.RATIO_ATTRIBUTES:
+                value = getattr(self, attribute)
+                if value is not None and number_of_persons < value:
+                    valid = False
+                    self._logger.warning("%s > number of persons" % (attribute))
+        return valid
 
     ##############################################
 
@@ -383,6 +409,17 @@ class AccidentRegister(AccidentRegisterMixin):
 
     def and_filter(self, **kwargs) -> 'FilteredAccidentRegister':
         return FilteredAccidentRegister(self, **kwargs)
+
+    ##############################################
+
+    def fix(self, path: Path) -> None:
+        with open(path, 'r') as fh:
+            patches = json.load(fh)
+        code_map = {_.code:_ for _ in self}
+        for code, patch in patches.items():
+            accident = code_map[code]
+            for attribute, value in patch.items():
+                setattr(accident, attribute, value)
 
 ####################################################################################################
 
