@@ -29,6 +29,11 @@ from SnowAvalancheData.Importer.Anena import AccidentBook, AccidentRegister, Acc
 
 ####################################################################################################
 
+import SnowAvalancheData.Logging.Logging as Logging
+logger = Logging.setup_logging()
+
+####################################################################################################
+
 def xls_paths() -> list[Path]:
     xls_paths = Path('data', 'anena-xls').glob('tableau-accidents-*-*.xls')
     return sorted(xls_paths)
