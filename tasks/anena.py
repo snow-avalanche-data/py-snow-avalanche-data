@@ -20,17 +20,19 @@
 
 ####################################################################################################
 
+import SnowAvalancheData.Logging.Logging as Logging
+logger = Logging.setup_logging()
+
+####################################################################################################
+
 from pathlib import Path
 from pprint import pprint
 
 from invoke import task
 
+from SnowAvalancheData.Cartography.Ign import IgnApi
 from SnowAvalancheData.Importer.Anena import AccidentBook, AccidentRegister, Accident
-
-####################################################################################################
-
-import SnowAvalancheData.Logging.Logging as Logging
-logger = Logging.setup_logging()
+from SnowAvalancheData.Importer.Anena import XlsImporter
 
 ####################################################################################################
 
@@ -48,7 +50,16 @@ def xls_paths() -> list[Path]:
 ####################################################################################################
 
 @task
-def to_json(ctx, json_path='anena-accidents.json', fixes_path='data/anena-accidents-fixes.json'):
+def to_json(
+        ctx,
+        json_path='anena-accidents.json',
+        fixes_path='data/anena-accidents-fixes.json',
+        ign_api_path='secret/ign-api.json',
+):
+    # ign_api_path = Path('secret', 'ign-api.json')
+    if ign_api_path:
+        ign_api = IgnApi.from_json_settings(ign_api_path)
+        XlsImporter.IGN_API = ign_api
     accidents = AccidentRegister()
     for path in xls_paths():
         book = AccidentBook(path)

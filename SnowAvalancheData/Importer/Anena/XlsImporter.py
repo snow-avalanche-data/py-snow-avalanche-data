@@ -40,6 +40,7 @@ from pathlib import Path
 from typing import Iterator
 import datetime
 import json
+import logging
 import os
 import re
 
@@ -48,9 +49,18 @@ import re
 import xlrd
 
 from SnowAvalancheData.Data import Accident as DataAccident
-from SnowAvalancheData.Data import AccidentRegister
-from SnowAvalancheData.Data import DataType
+from SnowAvalancheData.Data import AccidentRegister, DataType
 from SnowAvalancheData.Data.DataType import Delay, Inclination
+from SnowAvalancheData.Cartography.Projection import Utm
+from SnowAvalancheData.Cartography.Ign import IgnApi
+
+####################################################################################################
+
+_module_logger = logging.getLogger(__name__)
+
+####################################################################################################
+
+IGN_API = None
 
 ####################################################################################################
 
@@ -242,50 +252,146 @@ class SnowCohesion(MappedEnum):
 
 class Coordinate:
 
+    """
+
+    sexagesimal degree: degrees, minutes, and seconds : 40° 26′ 46″ N 79° 58′ 56″ W
+    degrees and decimal minutes: 40° 26.767′ N 79° 58.933′ W
+    decimal degrees: +40.446 -79.982
+
+    """
+
+    _logger = _module_logger.getChild('Coordinate')
+
     ##############################################
 
     def __init__(self, value: str) -> None:
         value = value.lower()
-        self._value = value
-        self._latidude = None
+        self._logger.info(f"coordinate {value}")
+        self._latitude = None
         self._longitude = None
-        if '°' in value:
-            # 45°51'23.50" / 6°27'12.10"
+        self._altitude = None
+        self.wrong = False
+        letter = 't'
+        if letter in value:   # UTM
             value = value.replace('/', ' ')
-            value = value.replace("''", '"')
+            zone, xy = [_.strip() for _ in value.split(letter)]
+            if len(xy) == 14:
+                x = xy[:7]
+                y = xy[7:]
+            else:
+                x, y = [_ for _ in xy.split(' ') if _]
+            self._longitude, self._latitude = Utm.unproject(int(zone), letter.upper(), int(x), int(y))
+        else:   # WGS84
+            value = value.replace('/', ' ')
+            value = value.replace(",", ".")
             value = value.replace("'.", "'")
-            # Fixme:
-            #   45°03.931'' // 6°04.543'
-            #   45°24'16''/6°49'01.2'' /// 45°24'05.8''/6°49'02.6''
-            try:
-                self._latidude, self._longitude = [self.parse_coordinate(_) for _ in value.split(' ') if _]
-            except Exception:
-                pass
+            coordinates = [_ for _ in value.split(' ') if _]
+            coordinates = [self.tokenise_wgs84(_) for _ in coordinates]
+            coordinates = [self.to_decimal(_) for _ in coordinates]
+            # coordinates = [self.round(_) for _ in coordinates]
+            self._latitude, self._longitude = coordinates[:2]
+        if self._bool:
+            if self._latitude < self._longitude:
+                self._latitude, self._longitude = self._longitude, self._latitude
+            if not (40 < self._latitude < 50):
+                self._logger.warning(f"Wrong latitude {self}")
+                self._latitude = None
+                self.wrong = True
+            if not (-10 < self._longitude < 10):
+                self._logger.warning(f"Wrong longitude {self}")
+                self._longitude = None
+                self.wrong = True
+        if IGN_API and self._bool:
+            self._altitude = IGN_API.elevation(latitude=self._latitude, longitude=self._longitude)
+        else:
+            self._altitude = None
+
+    ##############################################
+
+    # Fixme: clash with: if coordinate
+    @property
+    def _bool(self) -> bool:
+        return not (self._latitude is None or self._longitude is None)
 
     ##############################################
 
     @classmethod
-    def parse_coordinate(cls, value: str) -> list:
-        match = re.match('(\d+)°(\d+)\'(\d+(\.\d+)?)"?', value)
+    def tokenise_wgs84(cls, coordinate: str) -> list:
+        # WGS84: latitude 45°1'2.34"N longitude 6°12.34"E
+        parts = []
+        part = ''
+        def append(value: str) -> None:
+            if value:
+                if '.' in value:
+                    value = float(value)
+                else:
+                    value = int(value)
+                parts.append(value)
+        for c in coordinate:
+            if c.isdigit() or c == '.':
+                part += c
+            else:
+                append(part)
+                part = ''
+        append(part)
+        return parts
+
+    ##############################################
+
+    def to_decimal(self, coordinate: list) -> float:
+        if not (1 <= len(coordinate) <= 3):
+            self._logger.warning(f"Wrong coordinate {coordinate}")
+            self.wrong = True
+            # raise ValueError("Wrong coordinate %s", str(coordinate))
+            if len(coordinate) > 3:
+                coordinate = coordinate[:3]
+        if len(coordinate) == 3:
+            return coordinate[0] + coordinate[1]/60 + coordinate[2]/3600
+        if len(coordinate) == 2:
+            return coordinate[0] + coordinate[1]/60
+        if len(coordinate) == 1:
+            value = coordinate[0]
+            if isinstance(value, int):
+                return None
+            return value
+
+    ##############################################
+
+    @classmethod
+    def parse_wgs84(cls, value: str) -> list:
+        pattern = '(\d+) ° (\d+) \' (\d+(\.\d+)?) "?'.replace(' ', '')
+        match = re.match(pattern, value)
         strings = [_ for _ in match.groups()[:3]]
         return [int(strings[0]), int(strings[1]), float(strings[2])]
 
     ##############################################
 
     def __repr__(self) -> str:
-        return self._value
+        return f"latitude: {self._latitude}, longitude: {self._longitude}, altitude: {self._altitude}"
+
+    ##############################################
+
+    @classmethod
+    def round(cls, value: float) -> float:
+        return round(value, 6)
 
     ##############################################
 
     def to_json(self) -> dict:
-        if self._longitude:
-            return {'longitude': self._longitude, 'latitude': self._latidude}
+        if self._bool:
+            return {
+                'latitude': self.round(self._latitude),
+                'longitude': self.round(self._longitude),
+                'altitude': self._altitude,
+            }
         else:
-            return self._value
+            return None
 
 ####################################################################################################
 
 class Accident(DataAccident):
+
+    _logger = _module_logger.getChild('Accident')
 
     _MAP = {}
 
@@ -381,6 +487,8 @@ Accident.init()
 
 class AccidentSheetContextManager:
 
+    _logger = _module_logger.getChild('AccidentSheetContextManagergot')
+
     ##############################################
 
     def __init__(self, sheet: 'AccidentSheet') -> None:
@@ -435,6 +543,8 @@ class AccidentSheetContextManager:
 
         coordinate = kwargs['coordinate']
         if coordinate:
+            if coordinate.wrong:
+                self._logger.warning(f"Wrong coordinate for {kwargs['code']}")
             kwargs['coordinate'] = coordinate.to_json()
 
         # pprint(kwargs)

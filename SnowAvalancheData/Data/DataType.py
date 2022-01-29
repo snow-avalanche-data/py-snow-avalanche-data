@@ -39,6 +39,10 @@ __all__ = [
 
 from enum import Enum, auto
 
+import pyproj
+
+from SnowAvalancheData.Cartography.Projection import WGS84, RGF93
+
 ####################################################################################################
 
 class EnumMixin:
@@ -225,12 +229,9 @@ class Coordinate:
     def validate(cls, value) -> 'Coordinate':
         if isinstance(value, cls):
             return value
-        elif isinstance(value, str):
-            return cls(value=value)
         elif isinstance(value, dict):
             # Fixme: more check ???
             return cls(**value)
-        print(value)
         raise TypeError()
 
     ##############################################
@@ -245,29 +246,39 @@ class Coordinate:
 
     ##############################################
 
-    def __init__(self, latitude: list=None, longitude: list=None, value: str=None ) -> None:
-        self._value = value
-        self._latidude = latitude
+    def __init__(self, latitude: float=None, longitude: float=None, altitude: float=None) -> None:
+        self._latitude = latitude
         self._longitude = longitude
+        self._altitude = altitude
 
     ##############################################
 
     def __repr__(self) -> str:
-        return str(self._value)
+        return f"latitude: {self._latitude}, longitude: {self._longitude}, altitude: {self._altitude}"
 
     ##############################################
 
-    # @classmethod
-    # def format(cls, value) -> str:
-    #     return f'{value}'
+    @classmethod
+    def round(cls, value: float) -> float:
+        return round(value, 6)
 
     ##############################################
 
     def to_json(self) -> dict:
-        if self._longitude:
-            return {'longitude': self._longitude, 'latitude': self._latidude}
+        if self._latitude is None or self._longitude is None:
+            return None
         else:
-            return self._value
+            return {
+                'latitude': self.round(self._latitude),
+                'longitude': self.round(self._longitude),
+                'altitude': self._altitude,
+            }
+
+    ##############################################
+
+    def to_rgf93(self) -> tuple[float, float]:
+        """Return Lambert 93 (x, y)"""
+        return pyproj.transform(WGS84, RGF93, self._longitude, self._latitude)
 
 ####################################################################################################
 
