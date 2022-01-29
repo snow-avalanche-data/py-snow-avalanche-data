@@ -48,6 +48,7 @@ import json
 # https://github.com/ijl/orjson
 
 from pydantic import BaseModel
+import numpy as np
 import pandas as pd
 
 from .DataType import *
@@ -373,6 +374,19 @@ class AccidentRegisterMixin:
 
     def data_frame(self) -> pd.DataFrame:
         return AccidentDataFrame(self)
+
+    ##############################################
+
+    def vectorise(self, attribute: str) -> np.ndarray:
+        array = [getattr(self, attribute) for _ in self]
+        type_ = Accident.attribute_type(attribute)
+        if type_ is int:
+            dtype = np.int
+        elif type_ is float:
+            dtype = np.float
+        else:
+            return array
+        return np.array(array, dtype=dtype)
 
 ####################################################################################################
 
