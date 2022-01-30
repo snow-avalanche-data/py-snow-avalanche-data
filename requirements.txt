@@ -14,6 +14,12 @@ xlrd>=2.0
 # https://pyproj4.github.io/pyproj/stable/
 pyproj>=3.3
 
+# https://jupyterlab.readthedocs.io/en/stable/getting_started/installation.html
+jupyterlab>=3.2
+
+# https://ipyleaflet.readthedocs.io/en/latest/
+ipyleaflet>=2022.1
+
 # Automate tasks
 invoke
 
