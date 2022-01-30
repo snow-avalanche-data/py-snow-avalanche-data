@@ -50,7 +50,7 @@ import xlrd
 
 from SnowAvalancheData.Data import Accident as DataAccident
 from SnowAvalancheData.Data import AccidentRegister, DataType
-from SnowAvalancheData.Data.DataType import Delay, Inclination
+from SnowAvalancheData.Data.DataType import Delay
 from SnowAvalancheData.Cartography.Projection import Utm
 from SnowAvalancheData.Cartography.Ign import IgnApi
 
@@ -246,6 +246,19 @@ class SnowCohesion(MappedEnum):
     MAP = {
         'dure': 'HARD',
         'tendre': 'SOFT',
+    }
+
+####################################################################################################
+
+class Inclination(MappedEnum):
+    CLS = DataType.Inclination
+
+    MAP = {
+        '<30':   'SLOPE_LT_30',
+        '30-34': 'SLOPE_30_35',
+        '35-39': 'SLOPE_35_39',
+        '40-44': 'SLOPE_40_44',
+        '>45':   'SLOPE_GT_45',
     }
 
 ####################################################################################################

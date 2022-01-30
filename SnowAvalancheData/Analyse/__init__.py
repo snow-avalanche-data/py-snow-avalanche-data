@@ -279,8 +279,8 @@ class Analysis:
                     'snow_quality',
                     'start_reason',
                     'start_type',
-                    # 'inclination',
-        ):
+                    'inclination',
+            ):
                 plot_histogram(figure, attribute)
 
         with Figure('figure3', number_of_rows=2, number_of_columns=3, figure_size=figure_size) as figure:

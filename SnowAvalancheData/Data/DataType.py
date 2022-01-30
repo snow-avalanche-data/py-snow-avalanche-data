@@ -170,48 +170,12 @@ class SnowCohesion(EnumMixin, Enum):
 
 ####################################################################################################
 
-class Inclination:
-
-    ##############################################
-
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    ##############################################
-
-    @classmethod
-    def validate(cls, value) -> 'Inclination':
-        if isinstance(value, cls):
-            return value
-        elif isinstance(value, str):
-            return cls(value)
-        raise TypeError('string required')
-
-    ##############################################
-
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        # Fixme:
-        field_schema.update(
-            pattern='...',
-            examples=['...'],
-        )
-
-    ##############################################
-
-    def __init__(self, value: str) -> None:
-        self._value = value
-
-    ##############################################
-
-    def __repr__(self) -> str:
-        return self._value
-
-    ##############################################
-
-    def to_json(self):
-        return self._value
+class Inclination(EnumMixin, Enum):
+    SLOPE_LT_30 = auto()
+    SLOPE_30_35 = auto()
+    SLOPE_35_39 = auto()
+    SLOPE_40_44 = auto()
+    SLOPE_GT_45 = auto()
 
 ####################################################################################################
 

@@ -102,7 +102,6 @@ class Accident(BaseModel):
             Coordinate: Coordinate.to_json,
             Delay: Delay.to_json,
             Enum: EnumMixin.to_json,
-            Inclination: Inclination.to_json,
         }
 
     ATTRIBUTE_DOC: ClassVar = {
