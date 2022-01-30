@@ -60,42 +60,42 @@ _module_logger = logging.getLogger(__name__)
 ####################################################################################################
 
 class Accident(BaseModel):
-    activity: Optional[Activity] = None
-    altitude: Optional[int] = None
-    injured: Optional[int] = None
-    bra_level: Optional[int] = None
-    start_reason: Optional[StartReason] = None
     code: str
-    snow_cohesion: Optional[SnowCohesion] = None
-    comment: Optional[str] = None
+    activity: Optional[Activity] = None
+    alert_device: Optional[AlertDevice] = None
+    alert_person: Optional[AlertPerson] = None
+    altitude: Optional[int] = None
+    bra_level: Optional[int] = None
+    carried_away: Optional[int] = None
     city: Optional[str] = None
+    comment: Optional[str] = None
     coordinate: Optional[Coordinate] = None
     date: Optional[datetime.datetime] = None
     dead: Optional[int] = None
-    rescue_delay: Optional[Delay] = None
-    height_difference: Optional[int] = None
     departement: Optional[int] = None
-    carried_away: Optional[int] = None
-    gear: Optional[Gear] = None
-    partial_bluried_critical: Optional[int] = None
-    partial_bluried_non_critical: Optional[int] = None
-    head_bluried: Optional[int] = None
+    doctor_on_site: Optional[bool] = None
     full_bluried: Optional[int] = None
-    thickness_max: Optional[int] = None
+    gear: Optional[Gear] = None
+    head_bluried: Optional[int] = None
+    height_difference: Optional[int] = None
+    inclination: Optional[Inclination] = None
+    injured: Optional[int] = None
+    length: Optional[int] = None
+    location: Optional[str] = None
+    mountain_area: Optional[str] = None
     move_direction: Optional[MoveDirection] = None
     number_of_persons: Optional[int] = None
-    inclination: Optional[Inclination] = None
-    safe: Optional[int] = None
-    width: Optional[int] = None
-    length: Optional[int] = None
-    mountain_area: Optional[str] = None
-    alert_device: Optional[AlertDevice] = None
     orientation: Optional[Orientation] = None
-    alert_person: Optional[AlertPerson] = None
-    doctor_on_site: Optional[bool] = None
+    partial_bluried_critical: Optional[int] = None
+    partial_bluried_non_critical: Optional[int] = None
+    rescue_delay: Optional[Delay] = None
+    safe: Optional[int] = None
+    snow_cohesion: Optional[SnowCohesion] = None
     snow_quality: Optional[SnowQuality] = None
-    location: Optional[str] = None
+    start_reason: Optional[StartReason] = None
     start_type: Optional[StartType] = None
+    thickness_max: Optional[int] = None
+    width: Optional[int] = None
 
     class Config:
         json_encoders = {
@@ -107,75 +107,75 @@ class Accident(BaseModel):
 
     ATTRIBUTE_DOC: ClassVar = {
         'activity': 'activity of the persons during the accident',
+        'alert_device': 'device used to alert',
+        'alert_person': 'person who alerted',
         'altitude': 'altitude',
-        'injured': 'number of injured persons',
         'bra_level': 'French BRA level',
-        'start_reason': 'start reason of the avalanche',
-        'code': 'ANENA accident code',
-        'snow_cohesion': 'cohesion of the snow',
-        'comment': 'comment',
+        'carried_away': 'number of carried away persons',
         'city': 'city of the accident',
+        'code': 'ANENA accident code',
+        'comment': 'comment',
         'coordinate': 'GPS coordinate',
         'date': 'date',
         'dead': 'number of dead persons',
-        'rescue_delay': 'delay for the rescuer to arrive on the accident site',
-        'height_difference': 'height difference of the avalanche',
         'departement': 'French departement',
-        'carried_away': 'number of carried away persons',
-        'gear': 'progression gear used by the group',
-        'partial_bluried_critical': 'number of critical partial bluried persons',
-        'partial_bluried_non_critical': 'number of non-critical partial bluried  persons',
-        'head_bluried': 'number of head bluried persons',
+        'doctor_on_site': 'indicate if a doctor was on site',
         'full_bluried': 'number of full bluried persons',
-        'thickness_max': 'maximum thickness of the avalanche break',
+        'gear': 'progression gear used by the group',
+        'head_bluried': 'number of head bluried persons',
+        'height_difference': 'height difference of the avalanche',
+        'inclination': 'inclination of the slope',
+        'injured': 'number of injured persons',
+        'length': 'length of the avalanche',
+        'location': 'location of the accident',
+        'mountain_area': 'mountain area',
         'move_direction': 'moving direction of the group when the avalanche started',
         'number_of_persons': 'number of persons of the group',
-        'inclination': 'inclination of the slope',
-        'safe': 'number of safe persons',
-        'width': 'width of the avalanche',
-        'length': 'length of the avalanche',
-        'mountain_area': 'mountain area',
-        'alert_device': 'device used to alert',
         'orientation': 'orientation of the slope',
-        'alert_person': 'person who alerted',
-        'doctor_on_site': 'indicate if a doctor was on site',
+        'partial_bluried_critical': 'number of critical partial bluried persons',
+        'partial_bluried_non_critical': 'number of non-critical partial bluried  persons',
+        'rescue_delay': 'delay for the rescuer to arrive on the accident site',
+        'safe': 'number of safe persons',
+        'snow_cohesion': 'cohesion of the snow',
         'snow_quality': 'quality of snow',
-        'location': 'location of the accident',
+        'start_reason': 'start reason of the avalanche',
         'start_type': 'type of avalanche start',
+        'thickness_max': 'maximum thickness of the avalanche break',
+        'width': 'width of the avalanche',
     }
 
     ATTRIBUTE_UNIT: ClassVar = {
         'altitude': 'm',
-        'rescue_delay': 'min',
-        'height_difference': 'm',
-        'thickness_max': 'cm',
-        'inclination': 'degree',
-        'width': 'm',
-        'length': 'm',
         'area': 'm2',
+        'height_difference': 'm',
+        'inclination': 'degree',
+        'length': 'm',
+        'rescue_delay': 'min',
+        'thickness_max': 'cm',
         'volume': 'm3',
+        'width': 'm',
     }
     for _ in (
-        'injured',
-        'dead',
         'carried_away',
+        'dead',
+        'full_bluried',
+        'head_bluried',
+        'injured',
+        'number_of_persons',
         'partial_bluried_critical',
         'partial_bluried_non_critical',
-        'head_bluried',
-        'full_bluried',
-        'number_of_persons',
         'safe',
     ):
         ATTRIBUTE_UNIT[_] = 'number of persons'
 
     RATIO_ATTRIBUTES: ClassVar = (
-        'injured',
-        'dead',
         'carried_away',
+        'dead',
+        'full_bluried',
+        'head_bluried',
+        'injured',
         'partial_bluried_critical',
         'partial_bluried_non_critical',
-        'head_bluried',
-        'full_bluried',
         'safe',
     )
 
