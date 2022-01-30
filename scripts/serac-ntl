@@ -1,0 +1,111 @@
+#! /usr/bin/env python3
+
+####################################################################################################
+
+####################################################################################################
+#
+# SnowAvalancheData - 
+# Copyright (C) 2021 Fabrice Salvaire
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+####################################################################################################
+
+from pathlib import Path
+from pprint import pprint
+
+from SnowAvalancheData.Importer.Serac import SeracQuery
+
+####################################################################################################
+
+serac = SeracQuery()
+json_path = Path('data').joinpath('serac-full.json')
+serac.load_from_json(json_path)
+# serac.inspect()
+
+####################################################################################################
+
+# import nltk
+# nltk.download('stopwords')
+
+from nltk.corpus import stopwords
+stop_words = set(stopwords.words('french'))
+# print(stop_words)
+# {'même', 'ces', 'l', 'toi', 'la', 'eus', 'tu', 'je', 'serais', 'serait', 'ses', 'seriez', 'eûmes',
+# 'un', 'ayante', 'lui', 'eûtes', 'serez', 'on', 'les', 'ayants', 'étions', 'avez', 'ils', 'seront',
+# 'sommes', 'ayantes', 'ait', 'eut', 'auras', 'nos', 'votre', 'elle', 'est', 'aie', 'suis', 'n',
+# 'que', 'étée', 'serai', 'qui', 'fûtes', 'mon', 'eue', 'mes', 'une', 'êtes', 'ma', 'aient',
+# 'étants', 'ayez', 'eues', 'soient', 'serions', 'ta', 'fussiez', 'sera', 'eu', 'ont', 'avait',
+# 'qu', 'eurent', 'aurait', 'eussiez', 'son', 'ce', 'avons', 'étantes', 'aurai', 'aurais', 'aux',
+# 'c', 'seras', 'fut', 'j', 'fussent', 'serons', 'nous', 'fût', 'et', 'soit', 'ou', 'leur', 'mais',
+# 'y', 'as', 'm', 'auriez', 'aura', 'aurez', 'étées', 'furent', 'd', 'étiez', 'été', 'sa', 'se',
+# 'auront', 'tes', 'était', 's', 'avions', 'aurions', 'dans', 'pour', 'ton', 'à', 'fûmes', 'sont',
+# 'avais', 'du', 'étaient', 'au', 'étante', 't', 'avec', 'vos', 'eux', 'aurons', 'en', 'des',
+# 'aies', 'eussent', 'seraient', 'me', 'notre', 'avaient', 'étant', 'es', 'soyons', 'auraient',
+# 'fus', 'fusses', 'de', 'soyez', 'eussions', 'il', 'ai', 'ne', 'te', 'vous', 'eusses', 'étais',
+# 'le', 'pas', 'sur', 'eusse', 'par', 'étés', 'ayant', 'fussions', 'sois', 'moi', 'eût', 'ayons',
+# 'aviez', 'fusse'}
+
+from nltk.stem.snowball import SnowballStemmer
+stemmer = SnowballStemmer(language='french')
+
+import spacy
+nlp = spacy.load('fr_core_news_sm')
+# https://spacy.io/usage/linguistic-features
+# https://spacy.io/api/token#attributes
+
+def to_token(sentence):
+    # return [_.text for _ in nlp(sentence)]
+    for _ in nlp(sentence):
+        yield _.text
+
+def to_sentence(text):
+    # return [_.text for _ in nlp(text).sents]
+    for _ in nlp(text).sents:
+        yield _.text
+
+def remove_stop_words(sentence):
+    return [
+        token
+        for token in to_token(sentence)
+        if token not in stop_words
+    ]
+
+def to_stem(sentence):
+    # return [stemmer.stem(_) for _ in to_token(sentence)]
+    for _ in to_token(sentence):
+        yield stemmer.stem(_)
+
+def to_ner(sentence):
+    # return [(_.text, _.label_) for _ in nlp(sentence).ents]
+    for _ in nlp(sentence).ents:
+        yield _.text, _.label_
+
+def to_pos(sentence):
+    # return [(_, _.pos_) for _ in nlp(sentence)]
+    for _ in nlp(sentence):
+        yield _, _.pos_
+
+####################################################################################################
+
+for document in serac:
+    text = document.xpath('locales')[0]['description']
+    text = text.replace('\r\n', '\n')
+    if text is not None:
+        for sentence in to_sentence(text):
+            print('-'*100)
+            print(sentence.strip())
+            # print(remove_stop_words(text))
+            for ner in to_ner(sentence):
+                print(ner)
