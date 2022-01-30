@@ -163,17 +163,31 @@ class Analysis:
             unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
             create_histogram(attribute, title, unit)
 
+        binning_2d = {
+            'number_of_persons': Binning1D(Interval(1, 11), bin_width=1),
+            'carried_away': Binning1D(Interval(0, 11), bin_width=1),
+            'ratio_carried_away': Binning1D(Interval(0, 110), bin_width=10),
+            'width': Binning1D(Interval(0, 250), bin_width=15),
+        }
+        def get_binning_2d(attribute: str) -> Binning1D:
+            if attribute in binning_2d:
+                return binning_2d[attribute]
+            else:
+                return self.histograms[attribute].binning.clone()
+            # return binning_2d.get(
+            #     attribute,
+            #     self.histograms[attribute].binning.clone(),
+            # )
+
         self.histograms_2d = {}
         for x_attribute, y_attribute in (
-                ('number_of_persons','carried_away'),
+                ('number_of_persons', 'carried_away'),
+                ('number_of_persons', 'ratio_carried_away'),
+                ('length', 'width'),
         ):
             name = f'{x_attribute}/{y_attribute}'
             title = f'{y_attribute}/{x_attribute}'
-            # binning = [self.histograms[_].binning.clone() for _ in (x_attribute, y_attribute)]
-            binning = [
-                Binning1D(Interval(1, 11), bin_width=1),
-                Binning1D(Interval(0, 11), bin_width=1),
-            ]
+            binning = [get_binning_2d(_) for _ in (x_attribute, y_attribute)]
             self.histograms_2d[name] = Histogram2D(
                 binning=BinningND(*binning),
                 title=title,
@@ -188,6 +202,7 @@ class Analysis:
         # Fixme: also impl vectorize / vs cpu ram
         for accident in self.filtered_accidents:
             # self._logger.info(accident.__dict__)
+
             for attribute, histogram in self.histograms.items():
                 getter_attribute = self.ATTRIBUTE_MAPPER.get(attribute, attribute)
                 value = getattr(accident, getter_attribute)
@@ -198,6 +213,7 @@ class Analysis:
                         if value is not None:
                             ratio_histogram = self.ratio_histograms[attribute]
                             ratio_histogram.fill(value)
+
             for attribute, histogram in self.histograms_2d.items():
                 attributes = attribute.split('/')
                 values = [_ for _ in [getattr(accident, _) for _ in attributes] if _ is not None]
@@ -207,18 +223,20 @@ class Analysis:
     ##############################################
 
     def post_process_histograms(self) -> None:
-        for attribute, histogram in self.histograms.items():
-            histogram.normalise(to_percent=True, clone=False)
+        for histograms in (self.histograms, self.ratio_histograms):
+            for attribute, histogram in histograms.items():
+                histogram.normalise(to_percent=True, clone=False)
 
     ##############################################
 
     def dump_histograms(self) -> None:
+        pass
         # for attribute, histogram in self.histograms.items():
         #         self._logger.info("="*100)
         #         self._logger.info(attribute)
         #         self._logger.info(histogram)
-        for histogram in self.histograms_2d.values():
-            print(histogram)
+        # for histogram in self.histograms_2d.values():
+        #     print(histogram)
 
     ##############################################
 
@@ -323,10 +341,26 @@ class Analysis:
         with Figure('figure7', number_of_rows=1, number_of_columns=2, figure_size=figure_size) as figure:
             for attribute in (
                     ('number_of_persons', 'carried_away'),
+                    ('number_of_persons', 'ratio_carried_away'),
             ):
                 name = '/'.join(attribute)
                 histogram = self.histograms_2d[name]
-                figure.box_plot(histogram, title=attribute)
+                figure.box_plot(histogram, title='')
+
+        with Figure('figure8', number_of_rows=1, number_of_columns=2, figure_size=figure_size) as figure:
+            for attribute in (
+                    ('length', 'width'),
+                    ('height_difference', 'width'),
+            ):
+                # name = '/'.join(attribute)
+                # histogram = self.histograms_2d[name]
+                # figure.box_plot(histogram, title='')
+                figure.xy(
+                    # *[self.filtered_accidents.vectorise(_) for _ in attribute],
+                    *[self.data_frame.df[_] for _ in attribute],
+                    x_label=attribute[0],
+                    y_label=attribute[1],
+                )
 
     ##############################################
 
