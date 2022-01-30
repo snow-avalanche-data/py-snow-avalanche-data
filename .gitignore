@@ -1,23 +1,33 @@
 *~
 __pycache__
+.~lock.*
+.ipynb_checkpoints/
 
 du.log
-.~lock.*
+__TRASH__/
 
+nogit
 secret
 
 data/c2c-schema.json
 data/serac-full.json
 
-SnowAvalancheData/Import/Serac/c2c-api-client
-SnowAvalancheData/Import/Serac/serac-document-example.json
+SnowAvalancheData/Importer/Serac/c2c-api-client
+SnowAvalancheData/Importer/Serac/serac-document-example.json
+SnowAvalancheData/Statistics/unused/
+Untitled.ipynb
 __anena__.md
-__tmp__.py
 documentation/
 github-organisation.md
 html/
+notebooks/analysis-dev.ipynb
+notebooks/anena_accident_map.html
 pdf/
 ressources/
+tasks/unused/
+
+__todo__.md
 
 # !!!
 data/anena-accidents.json
+docs/sera-reports/
