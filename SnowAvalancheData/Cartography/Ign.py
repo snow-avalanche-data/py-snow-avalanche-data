@@ -94,6 +94,7 @@ class IgnApi:
     ##############################################
 
     def elevation(self, latitude: float, longitude: float) -> float:
+        # Fixme: cache values to speedup anena to json
         url = 'alti/rest/elevation.json'
         payload = {
             'lat': latitude,
