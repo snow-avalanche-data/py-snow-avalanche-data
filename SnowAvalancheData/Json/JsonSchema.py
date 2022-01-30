@@ -48,9 +48,9 @@ class SchemaNode:
     ##############################################
 
     def __getitem__(self, key: int | str):
-        if self._type is 'dict':
+        if self._type == 'dict':
             return self._data.setdefault(key, SchemaNode())
-        elif self._type is 'list':
+        elif self._type == 'list':
             return self._data
         else:
             raise NameError("Schema node is neither a dict or list")
