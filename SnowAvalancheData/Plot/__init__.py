@@ -235,6 +235,7 @@ class Figure:
         # Add margin
         accumulator *= .90
 
+        # see also scatter
         for (x, y), size in np.ndenumerate(accumulator):
             rectangle = plt.Rectangle([x - size / 2, y - size / 2], size, size,
                                       edgecolor='black', facecolor='white')
@@ -248,6 +249,16 @@ class Figure:
         ax.set_xticks(np.arange(x_size +1) -.5, labels, rotation='vertical')
         labels = [f'{_:g}' for _ in histogram.binning.y.bins()]
         ax.set_yticks(np.arange(y_size +1) -.5, labels)
+
+    ##############################################
+
+    def xy(self, x, y, x_label: str, y_label: str, axe: list=None):
+        ax = self._get_axe(axe)
+        # ax.plot(x, y, 'o')
+        ax.scatter(x, y)
+        # ax.set_title(title.title)
+        ax.set_xlabel(x_label)
+        ax.set_ylabel(y_label)
 
     ##############################################
 
