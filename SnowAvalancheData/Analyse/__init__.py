@@ -58,8 +58,8 @@ class Analysis:
     }
 
     ATTRIBUTE_TITLE = {
-        'orientation': 'Slope Orientation',
         'move_direction': 'Moving Direction',
+        'orientation': 'Slope Orientation',
     }
 
     ATTRIBUTE_MAPPER = {
@@ -122,6 +122,11 @@ class Analysis:
 
     ##############################################
 
+    def histogram_title(self, attribute: str) -> str:
+        return self.ATTRIBUTE_TITLE.get(attribute, attribute.replace('_', ' '))
+
+    ##############################################
+
     def create_histograms(self) -> None:
         self._logger.info('Create histograms')
 
@@ -136,7 +141,7 @@ class Analysis:
 
         self.histograms = {}
         for attribute, type_ in Accident.attribute_types():
-            title = self.ATTRIBUTE_TITLE.get(attribute, attribute.replace('_', ' '))
+            title = self.histogram_title(attribute)
             unit = Accident.ATTRIBUTE_UNIT.get(attribute, '')
             if issubclass(type_, Enum):
                 self.histograms[attribute] = EnumHistogram(type_, title=title, unit=unit)
@@ -166,12 +171,14 @@ class Analysis:
             title = f'{y_attribute}/{x_attribute}'
             # binning = [self.histograms[_].binning.clone() for _ in (x_attribute, y_attribute)]
             binning = [
-                Binning1D(Interval(0, 11), bin_width=1),
+                Binning1D(Interval(1, 11), bin_width=1),
                 Binning1D(Interval(0, 11), bin_width=1),
             ]
             self.histograms_2d[name] = Histogram2D(
                 binning=BinningND(*binning),
                 title=title,
+                x_label=self.histogram_title(x_attribute),
+                y_label=self.histogram_title(y_attribute),
             )
 
     ##############################################
@@ -205,7 +212,7 @@ class Analysis:
 
     ##############################################
 
-    def dumo_histograms(self) -> None:
+    def dump_histograms(self) -> None:
         # for attribute, histogram in self.histograms.items():
         #         self._logger.info("="*100)
         #         self._logger.info(attribute)
