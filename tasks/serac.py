@@ -20,31 +20,19 @@
 
 ####################################################################################################
 
-from types import ModuleType
+from pathlib import Path
 
-# http://www.pyinvoke.org
-from invoke import Collection
+from invoke import task
+
+from SnowAvalancheData.Importer.Serac import SeracQuery
 
 ####################################################################################################
 
-from . import anena
-from . import clean
-from . import jupyter
-from . import serac
+@task
+def to_json(ctx, json_path='serac-full.json'):
+    serac = SeracQuery()
 
-# from . import doc
-# from . import git
-# from . import github
-# from . import release
-# from . import test
-
-# modules = (
-#     anena,
-#     clean,
-#     jupyter,
-#     serac,
-# )
-modules = [obj for name, obj in globals().items() if isinstance(obj, ModuleType)]
-ns = Collection()
-for _ in modules:
-    ns.add_collection(Collection.from_module(_))
+    json_path = Path(json_path)
+    # xtyp=('avalanche', 'person_fall')
+    serac.load_from_api()
+    serac.write_json(json_path)
