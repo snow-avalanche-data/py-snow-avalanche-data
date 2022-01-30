@@ -809,12 +809,24 @@ class Histogram2D(Histogram):
         else:
             raise ValueError
         self._title = str(kwargs.get('title', ''))
+        self._x_label = str(kwargs.get('x_label', ''))
+        self._y_label = str(kwargs.get('y_label', ''))
         # self._y_unit = None
         array_size = [binning.array_size for binning in self._binning]
         self._make_array(array_size)
         self.data_set_moment = DataSetMomentND(dimension=2)
 
         # self.clear_feature()
+
+    ##############################################
+
+    @property
+    def x_label(self):
+        return self._x_label
+
+    @property
+    def y_label(self):
+        return self._y_label
 
    ###############################################
 
