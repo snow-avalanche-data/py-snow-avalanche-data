@@ -167,31 +167,40 @@ class Binning1D:
    ###############################################
 
     def bin_lower_edge(self, i: int) -> float:
+        if i == 0:
+            return FloatMinusInfinity
         return self._bin_edge(i)
 
    ###############################################
 
     def bin_upper_edge(self, i: int) -> float:
+        if i == self._over_flow_bin:
+            return FloatPlusInfinity
         return self._bin_edge(i, offset=1)
 
    ###############################################
 
     def bin_center(self, i: int) -> float:
+        if i == 0:
+            return FloatMinusInfinity
+        elif i == self._over_flow_bin:
+            return FloatPlusInfinity
         return self._bin_edge(i, offset=.5)
 
     ##############################################
 
     def bins(self) -> np.ndarray:
-        bins = np.zeros(self._number_of_bins +2)
-        bins[self.UNDER_FLOW_BIN] = FloatMinusInfinity
-        bins[self._over_flow_bin] = FloatPlusInfinity
-        bins[self.FIRST_BIN:self.UNDER_FLOW_BIN] = \
-            np.arange(
-                start=self._interval.inf,
-                stop=self._interval.sup + self._bin_width,
-                step=self._bin_width,
-            )
-        return bins
+        # """Return [-oo, inf, +bw..., sup, +oo] """
+        return np.arange(
+            start=self._interval.inf,
+            stop=self._interval.sup + self._bin_width,    # to include endpoint
+            step=self._bin_width,
+        )
+        # bins = np.zeros(self._number_of_bins +2)
+        # bins[self.UNDER_FLOW_BIN] = FloatMinusInfinity
+        # bins[self._over_flow_bin] = FloatPlusInfinity
+        # bins[self.FIRST_BIN:self._over_flow_bin] = _
+        # return bins
 
     ##############################################
 
